@@ -9,18 +9,24 @@ export const isSupabaseConfigured = Boolean(url && anonKey && !url.includes('YOU
 
 const isServer = Platform.OS === 'web' && typeof window === 'undefined';
 
-function createSupabaseClient(): SupabaseClient {
-  if (isServer) {
-    // Client "vide" côté serveur, sans storage du tout
-    return createClient(url ?? 'https://example.supabase.co', anonKey ?? 'public-anon-key', {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    });
-  }
+// Stub minimal utilisé UNIQUEMENT pendant le rendu serveur (SSR web).
+// Il ne doit jamais réellement être appelé côté client réel.
+const serverStub = {
+  auth: {
+    getSession: async () => ({ data: { session: null }, error: null }),
+    getUser: async () => ({ data: { user: null }, error: null }),
+    signInWithPassword: async () => ({ data: null, error: new Error('Not available during SSR') }),
+    signUp: async () => ({ data: null, error: new Error('Not available during SSR') }),
+    signOut: async () => ({ error: null }),
+    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+  },
+  from: () => ({
+    select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+  }),
+  rpc: async () => ({ data: null, error: new Error('Not available during SSR') }),
+} as unknown as SupabaseClient;
 
+function createRealSupabaseClient(): SupabaseClient {
   const storage = Platform.OS === 'web' ? window.localStorage : AsyncStorage;
 
   return createClient(url ?? 'https://example.supabase.co', anonKey ?? 'public-anon-key', {
@@ -33,4 +39,4 @@ function createSupabaseClient(): SupabaseClient {
   });
 }
 
-export const supabase = createSupabaseClient();
+export const supabase: SupabaseClient = isServer ? serverStub : createRealSupabaseClient();
