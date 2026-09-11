@@ -19,10 +19,18 @@ export default function ProfileScreen() {
         <Text style={styles.meta}>{profile?.email}</Text>
         <Text style={styles.meta}>{roleName === 'manager' ? 'Manager' : 'Employé'}</Text>
         <Text style={styles.meta}>{profile?.company?.name}</Text>
+        {profile?.company?.address ? (
+    <Text style={styles.meta}>Adresse : {profile.company.address}</Text>
+  ) : null}
         {roleName === 'manager' && profile?.company?.slug ? (
           <Text style={styles.code}>Code : {profile.company.slug}</Text>
         ) : null}
       </Card>
+
+      {roleName === 'manager' ? (
+        <Button label="Définir l'adresse du commerce" onPress={() => router.push('/(app)/company-location')} />
+      ) : null}
+
       <Button
         label="Se déconnecter"
         variant="ghost"
