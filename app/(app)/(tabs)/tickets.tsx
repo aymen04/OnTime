@@ -1,5 +1,6 @@
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DatePickerField } from '@/components/DatePickerField';
 import { Field } from '@/components/Field';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -30,6 +31,8 @@ export default function TicketsScreen() {
   const [type, setType] = useState<TicketType>('time_off');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -62,9 +65,13 @@ export default function TicketsScreen() {
       type,
       title: title.trim(),
       body: body.trim() || undefined,
+      start_date: type === 'time_off' ? startDate.trim() || undefined : undefined,
+      end_date: type === 'time_off' ? endDate.trim() || undefined : undefined,
     });
     setTitle('');
     setBody('');
+    setStartDate('');
+    setEndDate('');
     await load();
   }
 
@@ -93,21 +100,28 @@ export default function TicketsScreen() {
       {!isManager ? (
         <>
           <View style={styles.row}>
-            <Pressable onPress={() => router.push('/(app)/(tabs)/create-swap')} style={styles.pill}>
-              <Text style={styles.pillText}>🔄 Proposer un échange</Text>
+            <Pressable onPress={() => setType('time_off')} style={[styles.pill, type === 'time_off' && styles.pillOn]}>
+              <Text style={[styles.pillText, type === 'time_off' && styles.pillTextOn]}>Congé</Text>
             </Pressable>
-            <Pressable onPress={() => router.push('/(app)/(tabs)/swap-requests')} style={styles.pill}>
-              <Text style={styles.pillText}>📋 Mes échanges</Text>
+            <Pressable onPress={() => router.push('/(app)/(tabs)/create-swap')} style={styles.pill}>
+              <Text style={styles.pillText}>Échange</Text>
+            </Pressable>
+            <Pressable onPress={() => setType('issue')} style={[styles.pill, type === 'issue' && styles.pillOn]}>
+              <Text style={[styles.pillText, type === 'issue' && styles.pillTextOn]}>Problème</Text>
             </Pressable>
           </View>
 
-          <View style={styles.row}>
-            {TYPES.map((item) => (
-              <Pressable key={item.key} onPress={() => setType(item.key)} style={[styles.pill, type === item.key && styles.pillOn]}>
-                <Text style={[styles.pillText, type === item.key && styles.pillTextOn]}>{item.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+          <Pressable onPress={() => router.push('/(app)/(tabs)/swap-requests')}>
+            <Text style={styles.expandLink}>📋 Voir mes échanges en cours</Text>
+          </Pressable>
+
+          {type === 'time_off' ? (
+            <>
+              <DatePickerField label="Date de début" value={startDate} onChange={setStartDate} />
+              <DatePickerField label="Date de fin" value={endDate} onChange={setEndDate} />
+            </>
+          ) : null}
+
           <Field label="Titre" value={title} onChangeText={setTitle} autoCapitalize="sentences" />
           <Field label="Détail" value={body} onChangeText={setBody} autoCapitalize="sentences" />
           <Button label="Envoyer" onPress={submit} />
@@ -152,6 +166,9 @@ export default function TicketsScreen() {
             {TYPES.find((t) => t.key === ticket.type)?.label} · {statusLabel(ticket.status)}
           </Text>
           <Text style={styles.title}>{ticket.title}</Text>
+          {ticket.type === 'time_off' && ticket.start_date && ticket.end_date ? (
+            <Text style={styles.meta}>Du {ticket.start_date} au {ticket.end_date}</Text>
+          ) : null}
           {ticket.body ? <Text style={styles.meta}>{ticket.body}</Text> : null}
           <Text style={styles.meta}>{ticket.author?.full_name ?? ticket.author?.email}</Text>
           {isManager && ticket.status === 'pending' ? (
@@ -192,4 +209,5 @@ const styles = StyleSheet.create({
   kicker: { color: colors.muted, fontWeight: '700', textTransform: 'uppercase', fontSize: 11 },
   title: { fontWeight: '800', color: colors.ink, fontSize: 16 },
   meta: { color: colors.muted },
+  expandLink: { color: colors.teal, fontWeight: '600', marginTop: 4, marginBottom: 8, fontSize: 13 },
 });

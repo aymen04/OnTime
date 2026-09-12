@@ -24,23 +24,24 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
-   "plugins": [
-  "expo-router",
-  [
-    "expo-splash-screen",
-    {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#F4F1EC"
-    }
-  ],
-  [
-    "expo-location",
-    {
-      "locationAlwaysAndWhenInUsePermission": "OnTime utilise ta position pour valider tes pointages."
-    }
-  ]
-],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F1EC"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "OnTime utilise ta position pour valider tes pointages."
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
     "experiments": {
       "typedRoutes": true
     }
