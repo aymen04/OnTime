@@ -4,6 +4,7 @@ import { colors } from '@/lib/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 
+
 export default function TabLayout() {
   const { isManager } = useRole();
   const personIcon = useClientOnlyValue('person-outline', 'person-outline');
@@ -60,6 +61,14 @@ export default function TabLayout() {
         options={{
           title: 'Profil',
           tabBarIcon: ({ color }) => <Ionicons name={personIcon} size={22} color={color} />,
+        }}
+      />
+       <Tabs.Screen
+        name="time-entries"
+        options={{
+          title: 'Pointages',
+          href: isManager ? undefined : null,
+          tabBarIcon: ({ color }) => <Ionicons name="location-outline" size={22} color={color} />,
         }}
       />
     </Tabs>

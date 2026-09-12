@@ -11,6 +11,7 @@ import type { Shift } from '@/lib/types';
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ClockInOut } from '@/components/ClockInOut';
 
 export default function HomeScreen() {
   const { profile } = useAuth();
@@ -97,6 +98,8 @@ export default function HomeScreen() {
         </>
       ) : (
         <>
+            <ClockInOut />
+
           <Card>
             <Text style={styles.kicker}>Prochain shift</Text>
             {employeeStats.next ? (
