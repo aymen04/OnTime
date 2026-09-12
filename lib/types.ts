@@ -20,6 +20,9 @@ export type Company = {
   logo_url: string | null;
   primary_color: string | null;
   accent_color: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type Role = {
@@ -62,7 +65,7 @@ export type Shift = {
   employee?: Pick<Profile, 'id' | 'full_name' | 'email'>;
 };
 
-export type TicketType = 'shift_swap' | 'time_off' | 'issue';
+export type TicketType = 'time_off' | 'issue';
 export type TicketStatus = 'pending' | 'approved' | 'rejected';
 
 export type Ticket = {

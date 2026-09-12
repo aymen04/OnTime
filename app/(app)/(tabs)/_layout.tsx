@@ -71,6 +71,23 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <Ionicons name="location-outline" size={22} color={color} />,
         }}
       />
+      <Tabs.Screen
+      name="create-swap"
+      options={{ href: null }}
+      />
+      <Tabs.Screen
+         name="swap-requests"
+          options={{ href: null }}
+        />
+        
+        <Tabs.Screen
+  name="manage-swaps"
+  options={{
+    title: 'Échanges',
+    href: isManager ? undefined : null,
+    tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal-outline" size={22} color={color} />,
+  }}
+/>
     </Tabs>
   );
 }

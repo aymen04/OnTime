@@ -7,13 +7,12 @@ import { useRole } from '@/lib/context/RoleContext';
 import { createTicket, listTickets, setTicketStatus } from '@/lib/services/ticketService';
 import { colors, radius } from '@/lib/theme';
 import type { Ticket, TicketType } from '@/lib/types';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const TYPES: { key: TicketType; label: string }[] = [
   { key: 'time_off', label: 'Congé' },
-  { key: 'shift_swap', label: 'Échange' },
   { key: 'issue', label: 'Problème' },
 ];
 
@@ -60,6 +59,15 @@ export default function TicketsScreen() {
     <Screen title="Tickets" subtitle={isManager ? 'Demandes de l’équipe' : 'Congés, échanges, signalements'} loading={loading}>
       {!isManager ? (
         <>
+          <View style={styles.row}>
+            <Pressable onPress={() => router.push('/(app)/(tabs)/create-swap')} style={styles.pill}>
+              <Text style={styles.pillText}>🔄 Proposer un échange</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/(app)/(tabs)/swap-requests')} style={styles.pill}>
+              <Text style={styles.pillText}>📋 Mes échanges</Text>
+            </Pressable>
+          </View>
+
           <View style={styles.row}>
             {TYPES.map((item) => (
               <Pressable key={item.key} onPress={() => setType(item.key)} style={[styles.pill, type === item.key && styles.pillOn]}>
