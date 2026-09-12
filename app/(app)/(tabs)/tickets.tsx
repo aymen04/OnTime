@@ -5,7 +5,13 @@ import { Screen } from '@/components/Screen';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useRole } from '@/lib/context/RoleContext';
 import { createTicket, listTickets, setTicketStatus } from '@/lib/services/ticketService';
-import { colors, radius } from '@/lib/theme';
+import {
+  approveSwapRequest,
+  listPendingManagerSwapRequests,
+  rejectSwapRequest,
+} from '@/lib/services/shiftSwapService';
+import { formatDayHeading, formatRange } from '@/lib/time';
+import { colors, radius, space } from '@/lib/theme';
 import type { Ticket, TicketType } from '@/lib/types';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -20,16 +26,23 @@ export default function TicketsScreen() {
   const { profile } = useAuth();
   const { isManager } = useRole();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [swapRequests, setSwapRequests] = useState<any[]>([]);
   const [type, setType] = useState<TicketType>('time_off');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!profile?.company_id) return;
     setLoading(true);
     try {
-      setTickets(await listTickets(profile.company_id, isManager ? undefined : profile.id));
+      const results = await Promise.all([
+        listTickets(profile.company_id, isManager ? undefined : profile.id),
+        isManager ? listPendingManagerSwapRequests(profile.company_id) : Promise.resolve([]),
+      ]);
+      setTickets(results[0]);
+      setSwapRequests(results[1]);
     } finally {
       setLoading(false);
     }
@@ -53,6 +66,26 @@ export default function TicketsScreen() {
     setTitle('');
     setBody('');
     await load();
+  }
+
+  async function handleApproveSwap(id: string) {
+    setBusyId(id);
+    try {
+      await approveSwapRequest(id);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleRejectSwap(id: string) {
+    setBusyId(id);
+    try {
+      await rejectSwapRequest(id);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
   }
 
   return (
@@ -81,6 +114,38 @@ export default function TicketsScreen() {
         </>
       ) : null}
 
+      {isManager && swapRequests.length > 0 ? (
+        <>
+          <Text style={styles.section}>Échanges à valider</Text>
+          {swapRequests.map((req) => (
+            <Card key={req.id} style={{ gap: 4 }}>
+              <Text style={styles.kicker}>Échange de shift</Text>
+              <Text style={styles.title}>
+                {req.requester?.full_name} → {req.target?.full_name}
+              </Text>
+              <Text style={styles.meta}>{formatDayHeading(new Date(req.shift?.start_time))}</Text>
+              <Text style={styles.meta}>{formatRange(req.shift?.start_time, req.shift?.end_time)}</Text>
+              {req.message ? <Text style={styles.meta}>« {req.message} »</Text> : null}
+              <View style={styles.row}>
+                <Button
+                  label="Refuser"
+                  variant="ghost"
+                  onPress={() => handleRejectSwap(req.id)}
+                  disabled={busyId === req.id}
+                />
+                <Button
+                  label="Approuver"
+                  variant="secondary"
+                  onPress={() => handleApproveSwap(req.id)}
+                  disabled={busyId === req.id}
+                />
+              </View>
+            </Card>
+          ))}
+        </>
+      ) : null}
+
+      {tickets.length > 0 ? <Text style={styles.section}>Tickets</Text> : null}
       {tickets.map((ticket) => (
         <Card key={ticket.id} style={{ gap: 8 }}>
           <Text style={styles.kicker}>
@@ -97,7 +162,9 @@ export default function TicketsScreen() {
           ) : null}
         </Card>
       ))}
-      {tickets.length === 0 && !loading ? <Text style={styles.meta}>Aucun ticket.</Text> : null}
+      {tickets.length === 0 && swapRequests.length === 0 && !loading ? (
+        <Text style={styles.meta}>Aucune demande.</Text>
+      ) : null}
     </Screen>
   );
 }
@@ -110,6 +177,7 @@ function statusLabel(status: Ticket['status']) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  section: { fontWeight: '800', color: colors.ink, fontSize: 16, marginTop: space.md, marginBottom: 4 },
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 8,

@@ -111,3 +111,16 @@ export async function listCompanyTimeEntries(companyId: string, sinceISO: string
     if (error) throw error;
     return data ?? [];
   }
+
+  export async function listEmployeeTimeEntries(employeeId: string, sinceISO: string) {
+    const { data, error } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('employee_id', employeeId)
+      .gte('clock_in_time', sinceISO)
+      .order('clock_in_time', { ascending: false })
+      .limit(5);
+  
+    if (error) throw error;
+    return data ?? [];
+  }

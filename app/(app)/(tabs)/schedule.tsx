@@ -99,6 +99,7 @@ function EmployeeCalendar() {
 
 function WeeklyPlanning() {
   const { profile } = useAuth();
+  const [mode, setMode] = useState<'assign' | 'overview'>('assign');
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selectedDow, setSelectedDow] = useState(() => {
     const today = new Date().getDay();
@@ -169,9 +170,15 @@ function WeeklyPlanning() {
   }
 
   const dayShifts = shifts.filter((s) => s.start_time.startsWith(isoDay(selectedDate)));
+  const weekDays = WEEK_ORDER.map((dow, index) => ({ dow, date: addDays(weekStart, index) }));
 
   return (
     <Screen title="Planning" subtitle="Pool du jour → créneau" loading={loading} scroll>
+      <View style={styles.toggle}>
+        <Chip label="Assigner" active={mode === 'assign'} onPress={() => setMode('assign')} />
+        <Chip label="Vue d’ensemble" active={mode === 'overview'} onPress={() => setMode('overview')} />
+      </View>
+
       <View style={styles.weekNav}>
         <Chip label="←" active={false} onPress={() => setWeekStart(addDays(weekStart, -7))} />
         <Text style={styles.weekLabel}>
@@ -179,64 +186,89 @@ function WeeklyPlanning() {
         </Text>
         <Chip label="→" active={false} onPress={() => setWeekStart(addDays(weekStart, 7))} />
       </View>
-      <View style={styles.days}>
-        {WEEK_ORDER.map((dow) => (
-          <Pressable key={dow} onPress={() => setSelectedDow(dow)} style={[styles.dayTab, selectedDow === dow && styles.dayTabOn]}>
-            <Text style={[styles.dayTabText, selectedDow === dow && styles.dayTabTextOn]}>{DAY_LABELS[dow]}</Text>
-          </Pressable>
-        ))}
-      </View>
 
-      <Text style={styles.section}>Disponibles {DAY_LABELS[selectedDow]}</Text>
-      <View style={styles.pool}>
-        {pool.length === 0 ? <Text style={styles.meta}>Personne n’a déclaré de dispo ce jour-là.</Text> : null}
-        {pool.map(({ person, windows }) => (
-          <Pressable
-            key={person.id}
-            onPress={() => setSelectedEmployeeId(person.id)}
-            style={[styles.poolCard, selectedEmployeeId === person.id && styles.poolCardOn]}
-          >
-            <Text style={styles.poolName}>{person.full_name ?? person.email}</Text>
-            <Text style={styles.meta}>
-              {windows.map((w) => `${minutesToLabel(w.start_minutes)}–${minutesToLabel(w.end_minutes)}`).join(' · ')}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      {PLANNING_SLOTS.map((slot) => (
-        <Card key={slot.key}>
-          <Pressable onPress={() => assign(slot.startMinutes, slot.endMinutes)}>
-            <Text style={styles.slotTitle}>{slot.label}</Text>
-            <Text style={styles.hint}>Toucher pour assigner la personne sélectionnée</Text>
-          </Pressable>
-          {dayShifts
-            .filter((shift) => {
-              const start = new Date(shift.start_time);
-              const minutes = start.getHours() * 60 + start.getMinutes();
-              return minutes >= slot.startMinutes && minutes < slot.endMinutes;
-            })
-            .map((shift) => (
-              <View key={shift.id} style={styles.shiftRow}>
-                <Text style={styles.shiftTime}>
-                  {(shift.employee?.full_name ?? 'Équipier') + ' · ' + formatRange(shift.start_time, shift.end_time)}
-                </Text>
-                <Pressable
-                  onPress={() =>
-                    confirmAction('Supprimer ce shift ?', 'Cette action est définitive.', async () => {
-                      await deleteShift(shift.id);
-                      await load();
-                    })
-                  }
-                >
-                  <Text style={styles.trash}>🗑</Text>
-                </Pressable>
-              </View>
+      {mode === 'overview' ? (
+        weekDays.map(({ dow, date }) => {
+          const items = shifts
+            .filter((s) => s.start_time.startsWith(isoDay(date)))
+            .sort((a, b) => a.start_time.localeCompare(b.start_time));
+          return (
+            <Card key={dow}>
+              <Text style={styles.dayTitle}>{formatDayHeading(date)}</Text>
+              {items.length === 0 ? (
+                <Text style={styles.meta}>Aucun shift assigné</Text>
+              ) : (
+                items.map((shift) => (
+                  <Text key={shift.id} style={styles.shiftTime}>
+                    {(shift.employee?.full_name ?? 'Équipier') + ' · ' + formatRange(shift.start_time, shift.end_time)}
+                  </Text>
+                ))
+              )}
+            </Card>
+          );
+        })
+      ) : (
+        <>
+          <View style={styles.days}>
+            {WEEK_ORDER.map((dow) => (
+              <Pressable key={dow} onPress={() => setSelectedDow(dow)} style={[styles.dayTab, selectedDow === dow && styles.dayTabOn]}>
+                <Text style={[styles.dayTabText, selectedDow === dow && styles.dayTabTextOn]}>{DAY_LABELS[dow]}</Text>
+              </Pressable>
             ))}
-        </Card>
-      ))}
+          </View>
+
+          <Text style={styles.section}>Disponibles {DAY_LABELS[selectedDow]}</Text>
+          <View style={styles.pool}>
+            {pool.length === 0 ? <Text style={styles.meta}>Personne n’a déclaré de dispo ce jour-là.</Text> : null}
+            {pool.map(({ person, windows }) => (
+              <Pressable
+                key={person.id}
+                onPress={() => setSelectedEmployeeId(person.id)}
+                style={[styles.poolCard, selectedEmployeeId === person.id && styles.poolCardOn]}
+              >
+                <Text style={styles.poolName}>{person.full_name ?? person.email}</Text>
+                <Text style={styles.meta}>
+                  {windows.map((w) => `${minutesToLabel(w.start_minutes)}–${minutesToLabel(w.end_minutes)}`).join(' · ')}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          {PLANNING_SLOTS.map((slot) => (
+            <Card key={slot.key}>
+              <Pressable onPress={() => assign(slot.startMinutes, slot.endMinutes)}>
+                <Text style={styles.slotTitle}>{slot.label}</Text>
+                <Text style={styles.hint}>Toucher pour assigner la personne sélectionnée</Text>
+              </Pressable>
+              {dayShifts
+                .filter((shift) => {
+                  const start = new Date(shift.start_time);
+                  const minutes = start.getHours() * 60 + start.getMinutes();
+                  return minutes >= slot.startMinutes && minutes < slot.endMinutes;
+                })
+                .map((shift) => (
+                  <View key={shift.id} style={styles.shiftRow}>
+                    <Text style={styles.shiftTime}>
+                      {(shift.employee?.full_name ?? 'Équipier') + ' · ' + formatRange(shift.start_time, shift.end_time)}
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        confirmAction('Supprimer ce shift ?', 'Cette action est définitive.', async () => {
+                          await deleteShift(shift.id);
+                          await load();
+                        })
+                      }
+                    >
+                      <Text style={styles.trash}>🗑</Text>
+                    </Pressable>
+                  </View>
+                ))}
+            </Card>
+          ))}
+        </>
+      )}
     </Screen>
   );
 }

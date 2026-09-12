@@ -64,13 +64,9 @@ export default function TabLayout() {
         }}
       />
        <Tabs.Screen
-        name="time-entries"
-        options={{
-          title: 'Pointages',
-          href: isManager ? undefined : null,
-          tabBarIcon: ({ color }) => <Ionicons name="location-outline" size={22} color={color} />,
-        }}
-      />
+  name="time-entries"
+  options={{ href: null }}
+/>
       <Tabs.Screen
       name="create-swap"
       options={{ href: null }}
@@ -82,11 +78,7 @@ export default function TabLayout() {
         
         <Tabs.Screen
   name="manage-swaps"
-  options={{
-    title: 'Échanges',
-    href: isManager ? undefined : null,
-    tabBarIcon: ({ color }) => <Ionicons name="swap-horizontal-outline" size={22} color={color} />,
-  }}
+  options={{ href: null }}
 />
     </Tabs>
   );
