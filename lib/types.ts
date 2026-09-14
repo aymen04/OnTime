@@ -7,8 +7,13 @@ export const PLANNING_SLOTS = [
   { key: 'night', label: '22–6', startMinutes: 22 * 60, endMinutes: 30 * 60 },
 ] as const;
 
-export const AVAILABILITY_MIN = 6 * 60;
-export const AVAILABILITY_MAX = 30 * 60;
+/** Heures légales / opérationnelles (6 AM → 6 AM j+1). */
+export const LEGAL_MIN = 6 * 60;
+export const LEGAL_MAX = 30 * 60;
+
+/** Plage sélectionnable h24 élargie (minuit → midi j+1). */
+export const AVAILABILITY_MIN = 0;
+export const AVAILABILITY_MAX = 36 * 60;
 
 export type RoleName = 'manager' | 'employee';
 

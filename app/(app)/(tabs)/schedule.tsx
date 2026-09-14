@@ -1,5 +1,7 @@
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { TimeRangeSlider } from '@/components/TimeRangeSlider';
 import { confirmAction } from '@/lib/confirm';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useRole } from '@/lib/context/RoleContext';
@@ -17,7 +19,7 @@ import {
   minutesToLabel,
   startOfWeek,
 } from '@/lib/time';
-import { DAY_LABELS, PLANNING_SLOTS, WEEK_ORDER, type Availability, type Profile, type Shift } from '@/lib/types';
+import { DAY_LABELS, WEEK_ORDER, type Availability, type Profile, type Shift } from '@/lib/types';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -106,6 +108,8 @@ function WeeklyPlanning() {
     return today === 0 ? 0 : today;
   });
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [shiftStart, setShiftStart] = useState(9 * 60);
+  const [shiftEnd, setShiftEnd] = useState(18 * 60);
   const [people, setPeople] = useState<Profile[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [shifts, setShifts] = useState<Shift[]>([]);
@@ -147,14 +151,18 @@ function WeeklyPlanning() {
     }))
     .filter((row) => row.windows.length > 0);
 
-  async function assign(slotStart: number, slotEnd: number) {
+  async function assign() {
     setError(null);
     if (!selectedEmployeeId || !profile?.company_id || !profile.id) {
       setError('Choisis d’abord quelqu’un dans le pool.');
       return;
     }
+    if (shiftEnd <= shiftStart) {
+      setError('L’heure de fin doit être après l’heure de début.');
+      return;
+    }
     const windows = availability.filter((a) => a.employee_id === selectedEmployeeId && a.day_of_week === selectedDow);
-    const hit = bestOverlap(windows, slotStart, slotEnd);
+    const hit = bestOverlap(windows, shiftStart, shiftEnd);
     if (!hit) {
       setError('Pas d’intersection entre la dispo et ce créneau.');
       return;
@@ -173,7 +181,7 @@ function WeeklyPlanning() {
   const weekDays = WEEK_ORDER.map((dow, index) => ({ dow, date: addDays(weekStart, index) }));
 
   return (
-    <Screen title="Planning" subtitle="Pool du jour → créneau" loading={loading} scroll>
+    <Screen title="Planning" subtitle="Pool du jour → shift personnalisé" loading={loading} scroll>
       <View style={styles.toggle}>
         <Chip label="Assigner" active={mode === 'assign'} onPress={() => setMode('assign')} />
         <Chip label="Vue d’ensemble" active={mode === 'overview'} onPress={() => setMode('overview')} />
@@ -236,20 +244,27 @@ function WeeklyPlanning() {
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          {PLANNING_SLOTS.map((slot) => (
-            <Card key={slot.key}>
-              <Pressable onPress={() => assign(slot.startMinutes, slot.endMinutes)}>
-                <Text style={styles.slotTitle}>{slot.label}</Text>
-                <Text style={styles.hint}>Toucher pour assigner la personne sélectionnée</Text>
-              </Pressable>
-              {dayShifts
-                .filter((shift) => {
-                  const start = new Date(shift.start_time);
-                  const minutes = start.getHours() * 60 + start.getMinutes();
-                  return minutes >= slot.startMinutes && minutes < slot.endMinutes;
-                })
-                .map((shift) => (
-                  <View key={shift.id} style={styles.shiftRow}>
+          <Text style={styles.section}>Shift personnalisé</Text>
+          <TimeRangeSlider
+            start={shiftStart}
+            end={shiftEnd}
+            onChange={(nextStart, nextEnd) => {
+              setShiftStart(nextStart);
+              setShiftEnd(nextEnd);
+            }}
+          />
+          <Button label="Assigner ce shift" onPress={assign} />
+
+          <Text style={styles.section}>Shifts du jour</Text>
+          {dayShifts.length === 0 ? (
+            <Text style={styles.meta}>Aucun shift assigné ce jour-là.</Text>
+          ) : (
+            dayShifts
+              .slice()
+              .sort((a, b) => a.start_time.localeCompare(b.start_time))
+              .map((shift) => (
+                <Card key={shift.id}>
+                  <View style={styles.shiftRow}>
                     <Text style={styles.shiftTime}>
                       {(shift.employee?.full_name ?? 'Équipier') + ' · ' + formatRange(shift.start_time, shift.end_time)}
                     </Text>
@@ -264,9 +279,9 @@ function WeeklyPlanning() {
                       <Text style={styles.trash}>🗑</Text>
                     </Pressable>
                   </View>
-                ))}
-            </Card>
-          ))}
+                </Card>
+              ))
+          )}
         </>
       )}
     </Screen>
@@ -324,8 +339,6 @@ const styles = StyleSheet.create({
   poolCardOn: { borderColor: colors.teal, backgroundColor: colors.tealSoft },
   poolName: { fontWeight: '800', color: colors.ink },
   error: { color: colors.danger, fontWeight: '700' },
-  slotTitle: { fontWeight: '800', marginBottom: 8, color: colors.ink },
-  shiftRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  shiftRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   trash: { fontSize: 16, padding: 4 },
-  hint: { marginTop: 6, color: colors.muted, fontSize: 12 },
 });

@@ -1,17 +1,16 @@
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
+import { TimeRangeSlider } from '@/components/TimeRangeSlider';
 import { confirmAction } from '@/lib/confirm';
 import { useAuth } from '@/lib/context/AuthContext';
 import { createAvailability, deleteAvailability, listAvailability } from '@/lib/services/availabilityService';
 import { colors, radius } from '@/lib/theme';
 import { minutesToLabel } from '@/lib/time';
-import { AVAILABILITY_MAX, AVAILABILITY_MIN, DAY_LABELS, WEEK_ORDER, type Availability } from '@/lib/types';
+import { DAY_LABELS, WEEK_ORDER, type Availability } from '@/lib/types';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-
-const HOUR_OPTIONS = Array.from({ length: (AVAILABILITY_MAX - AVAILABILITY_MIN) / 60 + 1 }, (_, i) => AVAILABILITY_MIN + i * 60);
 
 export default function AvailabilityScreen() {
   const { profile } = useAuth();
@@ -56,7 +55,7 @@ export default function AvailabilityScreen() {
   }
 
   return (
-    <Screen title="Disponibilités" subtitle="Récurrentes, 6 AM → 6 AM" loading={loading}>
+    <Screen title="Disponibilités" subtitle="H24 · hors heures légales (6 AM–6 AM) en orange" loading={loading}>
       <Text style={styles.label}>Jour</Text>
       <View style={styles.row}>
         {WEEK_ORDER.map((dow) => (
@@ -65,10 +64,15 @@ export default function AvailabilityScreen() {
           </Pressable>
         ))}
       </View>
-      <Text style={styles.label}>Début</Text>
-      <HourPicker value={start} onChange={setStart} />
-      <Text style={styles.label}>Fin</Text>
-      <HourPicker value={end} onChange={setEnd} />
+      <Text style={styles.label}>Plage horaire</Text>
+      <TimeRangeSlider
+        start={start}
+        end={end}
+        onChange={(nextStart, nextEnd) => {
+          setStart(nextStart);
+          setEnd(nextEnd);
+        }}
+      />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button label="Enregistrer cette dispo" onPress={add} />
 
@@ -97,18 +101,6 @@ export default function AvailabilityScreen() {
   );
 }
 
-function HourPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  return (
-    <View style={styles.hours}>
-      {HOUR_OPTIONS.map((minutes) => (
-        <Pressable key={minutes} onPress={() => onChange(minutes)} style={[styles.hour, value === minutes && styles.hourOn]}>
-          <Text style={[styles.hourText, value === minutes && styles.hourTextOn]}>{minutesToLabel(minutes).replace(' +1', 'j+1')}</Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   label: { fontWeight: '700', color: colors.muted },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
@@ -123,18 +115,6 @@ const styles = StyleSheet.create({
   pillOn: { backgroundColor: colors.teal, borderColor: colors.teal },
   pillText: { fontWeight: '700', color: colors.ink, fontSize: 12 },
   pillTextOn: { color: colors.white },
-  hours: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  hour: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: radius.sm,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  hourOn: { backgroundColor: colors.tealSoft, borderColor: colors.teal },
-  hourText: { fontSize: 11, fontWeight: '700', color: colors.ink },
-  hourTextOn: { color: colors.teal },
   error: { color: colors.danger, fontWeight: '700' },
   item: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   itemTitle: { fontWeight: '800', color: colors.ink },
