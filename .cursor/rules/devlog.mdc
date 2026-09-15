@@ -1,0 +1,29 @@
+---
+description: Journaliser chaque tour utile dans DEVLOG.md pour chiffrage/facturation
+alwaysApply: true
+---
+
+# DEVLOG — journal de facturation
+
+À **chaque tour utile** (travail réel demandé par l’utilisateur), append une entrée en haut de `DEVLOG.md` à la racine du repo.
+
+## Obligatoire
+
+- Journaliser le **prompt utilisateur** (verbatim ou quasi) + un **résumé ultra-bref** de ce qui a été fait.
+- Ne **pas** chiffrer soi-même : aucun montant en €, aucun taux horaire.
+- Ne **pas** inventer de tokens, durée, ni coûts — uniquement le journal factuel.
+- Ne **pas** committer `DEVLOG.md` sauf demande explicite de l’utilisateur.
+
+## Format (strict)
+
+```markdown
+### HH:MM — titre court
+
+- **Prompt :** <prompt utilisateur>
+- **Fait :** <résumé ultra-bref en une ligne>
+```
+
+- `HH:MM` = heure locale du tour.
+- Titre : quelques mots décrivant l’action.
+- Entrées les plus récentes en **haut** du fichier.
+- Ignorer les tours triviaux (ex. simple « ok », question purement conversationnelle sans travail).
