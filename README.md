@@ -1,49 +1,226 @@
-# OnTime
+# Introduction
 
-SaaS de planning pour commerces (cafés, restos, salons). Mobile-first (Expo), multi-tenant, rôles Manager / Employé.
+Next 15 starter kit based on Next.js, Auth.js and Prisma designed to accelerate the development of web-based (SaaS) applications.
 
-## Décisions v1
+# Quickstart
 
-- **RLS dès le premier jour**, via fonctions `SECURITY DEFINER` (`current_company_id()`, `is_manager()`) — pas de policy `users` qui relit `users`.
-- **Profil créé par trigger** `auth.users` → `public.users` (plus d’insert client après signup).
-- **Postes** : texte libre `shifts.position_label` (pas de table `positions` pour l’instant).
-- **Disponibilités** : récurrentes par `day_of_week` (0 = dimanche, comme `Date.getDay()`), plage 6 AM → 6 AM.
-- **Client unique Expo** pour l’instant. Un web manager (Next.js) viendra plus tard.
+Get started in about 30 minutes by following these steps.
 
-## Stack
+## Preparation
 
-Expo SDK 57 · Expo Router · TypeScript · Supabase (Auth + Postgres)
+1. Unpack the Archive
 
-## Setup
-
-1. Crée un projet Supabase.
-2. Colle et exécute [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) dans le SQL Editor.
-3. Auth → désactive la confirmation email tant que tu es en dev.
-4. Copie `.env.example` vers `.env` :
-
-```
-EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-```
-
-5. Installe et lance :
+2. Switch to the project's root directory
 
 ```bash
-npm install
-npx expo start
+cd monorepo-next-prisma-authjs
 ```
 
-Ouvre iOS / Android, ou `w` pour le web.
+2. Install PNPM if not already installed
 
-## Parcours
+```bash
+npm i -g pnpm
+```
 
-- Inscription / connexion. Code commerce optionnel à l’inscription.
-- Sans commerce → créer (devient manager, slug généré) ou rejoindre (employé).
-- Employé : dispos, calendrier liste/semaine, tickets, dashboard.
-- Manager : planning (pool du jour + overlap 6–14 / 14–22 / 22–6), équipe, tickets, dashboard. Le code d’invitation est sur le profil.
+3. Install the package dependencies of the whole monorepo
 
-Intersection : dispo 9h–18h + clic sur 14–22 → shift 14h–18h. Aucun overlap → refus.
+```bash
+pnpm i
+```
 
-## Sécurité
+4. Copy the sample configurations
 
-Les policies s’appuient sur `auth.uid()` via des fonctions `SECURITY DEFINER`. Les RPC `create_company` / `join_company` sont le seul moyen de rattacher un compte à un commerce. Ne jamais remettre RLS à off.
+```bash
+cp apps/dashboard/.env.example apps/dashboard/.env
+cp apps/marketing/.env.example apps/marketing/.env
+cp apps/public-api/.env.example apps/public-api/.env
+cp packages/database/.env.example packages/database/.env
+```
+
+## Services
+
+### Database
+
+#### Install PostgreSQL
+
+1.  Install PostgreSQL via Homebrew, Chocolatey or download it from the [website](https://www.postgresql.org/download/).
+
+```bash
+brew install postgresql
+```
+
+2. Add an initial user.
+
+```bash
+sudo -u postgres psql
+CREATE USER postgres WITH PASSWORD 'password';
+ALTER USER postgres WITH SUPERUSER;
+\q
+```
+
+3.  Update database `packages/database/.env` with your credentials.
+
+```bash
+DATABASE_URL=postgresql://postgres:password@localhost:5432/database?schema=public
+```
+
+4. Apply the database migrations.
+
+```bash
+pnpm --filter database migrate dev
+```
+
+5. Update also the dashboard `apps/dashboard/.env` with your credentials.
+
+```bash
+DATABASE_URL=postgresql://postgres:password@localhost:5432/database?schema=public
+```
+
+### Google Login (Optional)
+
+1. Visit the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create an account if you don't have one already.
+3. Navigate to APIs or [click here](https://console.cloud.google.com/apis)
+4. Configure the `OAuth consent screen` and add yourself as test user.
+5. Click on `Credentials`, create new OAuth credentials and save those credentials.
+6. Add the Authorized JavaScript origin to the credential settings.
+
+```bash
+http://localhost:3000
+```
+
+7. Add the Authorized redirect URI to the credential settings.
+
+```bash
+http://localhost:3000/api/auth/callback/google
+```
+
+8. Update dashboard `apps/dashboard/.env` with the created credentials.
+
+```bash
+AUTH_GOOGLE_CLIENT_ID=
+AUTH_GOOGLE_CLIENT_SECRET=
+```
+
+### Microsoft Login (Optional)
+
+1. Visit the [Azure Portal](https://portal.azure.com/).
+2. Create an account if you don't have one already.
+3. Navigate to your Entra ID (Active Directory).
+4. Register a new application with platform web.
+5. Click on `Authentication` in the menu and add the redirect URIs
+
+```bash
+http://localhost:3000
+http://localhost:3000/api/auth/callback/microsoft-entra-id
+```
+
+6. Under `Certificates & Secrets`, create a new client secret.
+7. Update dashboard `apps/dashboard/.env` with the created secret.
+
+```bash
+AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID=
+AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET=
+```
+
+### Stripe
+
+1. Visit the [Stripe Dashboard](https://dashboard.stripe.com/).
+2. Create an account if you don't have one already.
+3. Activate test mode.
+4. Activate the customer billing portal.
+5. Create a product.
+6. Create a price for the product.
+7. Navigate to developer section and copy the API credentials.
+8. Update dashboard `apps/dashboard/.env` with the IDs and credentials.
+
+```bash
+NEXT_PUBLIC_BILLING_PRICE_PRO_MONTH_ID=
+NEXT_PUBLIC_BILLING_PRICE_PRO_YEAR_ID=
+NEXT_PUBLIC_BILLING_PRICE_LIFETIME_ID=
+BILLING_STRIPE_SECRET_KEY=
+BILLING_STRIPE_WEBHOOK_SECRET=
+```
+
+### SMTP Provider
+
+The starter kit supports Nodemailer (SMTP) and Resend.
+
+1. Choose an SMTP provider in `packages/email/provider/index.ts`.
+2. Update dashboard `apps/dashboard/.env` with SMTP credentials.
+
+```bash
+EMAIL_FROM=
+
+# Provider: NodeMailer
+EMAIL_NODEMAILER_URL=
+
+# Provider: Postmark
+EMAIL_POSTMARK_SERVER_TOKEN=
+
+# Provider: Resend
+EMAIL_RESEND_API_KEY=
+
+# Provider: SendGrid
+EMAIL_SENDGRID_API_KEY=
+```
+
+For Gmail you need an **app-specific password** and set it up like this
+
+```bash
+EMAIL_NODEMAILER_URL=smtp://myemail@gmail.com:suyz yeba qtgv xrnp@smtp.gmail.com:465
+```
+
+We recommend Resend for the ease of use.
+
+<Callout>SMTP provider is mandatory for credentials login.</Callout>
+
+## Dashboard Application
+
+1. Start the dashboard application
+
+```bash
+pnpm --filter dashboard dev
+```
+
+2. Navigate to http://localhost:3000
+
+You’re all set to start!
+
+## Marketing Application
+
+1. Start the marketing application
+
+```bash
+pnpm --filter marketing dev
+```
+
+2. Navigate to http://localhost:3001
+
+You’re all set to start!
+
+## Public API Application
+
+1. Start the public API application
+
+```bash
+pnpm --filter public-api dev
+```
+
+2. Navigate to http://localhost:3002
+
+You’re all set to start!
+
+## Troubleshoot
+
+### The generated Prisma types are not loaded.
+
+Restart VS code (or the TS server).
+
+### It seems that I can't login
+
+The database is probably not set up.
+
+### NPM throws an error
+
+In the monorepo version npm is no longer supported. It's all pnpm now. The problem is that npm, yarn and pnpm have different workspace syntax and package hoisting patterns. Supporting all package managers is not possible in a monorepo setup and pnpm is the most popular one.
