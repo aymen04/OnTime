@@ -28,15 +28,16 @@ npm i -g pnpm
 pnpm i
 ```
 
-4. Copy the sample configurations
+4. Copy the sample configurations (dev local)
 
 ```bash
-cp apps/dashboard/.env.example apps/dashboard/.env
-cp apps/marketing/.env.example apps/marketing/.env
-cp apps/public-api/.env.example apps/public-api/.env
-cp packages/database/.env.example packages/database/.env
+cp apps/dashboard/.env.development.example apps/dashboard/.env.development
+cp apps/marketing/.env.development.example apps/marketing/.env.development
+cp apps/public-api/.env.development.example apps/public-api/.env.development
+cp packages/database/.env.development.example packages/database/.env
 ```
 
+Environnements : **dev** (local) · **staging** (hébergeur, voir `*.env.staging.example`) · **prod** (`*.env.production.example`, inactif jusqu'au lancement).
 ## Services
 
 ### Database
@@ -61,7 +62,7 @@ ALTER USER postgres WITH SUPERUSER;
 3.  Update database `packages/database/.env` with your credentials.
 
 ```bash
-DATABASE_URL=postgresql://postgres:password@localhost:5432/database?schema=public
+DATABASE_URL=postgresql://postgres:password@localhost:5432/ontime_dev
 ```
 
 4. Apply the database migrations.
@@ -70,10 +71,10 @@ DATABASE_URL=postgresql://postgres:password@localhost:5432/database?schema=publi
 pnpm --filter database migrate dev
 ```
 
-5. Update also the dashboard `apps/dashboard/.env` with your credentials.
+5. Update also the dashboard `apps/dashboard/.env.development` with your credentials.
 
 ```bash
-DATABASE_URL=postgresql://postgres:password@localhost:5432/database?schema=public
+DATABASE_URL=postgresql://postgres:password@localhost:5432/ontime_dev
 ```
 
 ### Google Login (Optional)
@@ -95,7 +96,7 @@ http://localhost:3000
 http://localhost:3000/api/auth/callback/google
 ```
 
-8. Update dashboard `apps/dashboard/.env` with the created credentials.
+8. Update dashboard `apps/dashboard/.env.development` with the created credentials.
 
 ```bash
 AUTH_GOOGLE_CLIENT_ID=
@@ -116,7 +117,7 @@ http://localhost:3000/api/auth/callback/microsoft-entra-id
 ```
 
 6. Under `Certificates & Secrets`, create a new client secret.
-7. Update dashboard `apps/dashboard/.env` with the created secret.
+7. Update dashboard `apps/dashboard/.env.development` with the created secret.
 
 ```bash
 AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID=
@@ -132,7 +133,7 @@ AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET=
 5. Create a product.
 6. Create a price for the product.
 7. Navigate to developer section and copy the API credentials.
-8. Update dashboard `apps/dashboard/.env` with the IDs and credentials.
+8. Update dashboard `apps/dashboard/.env.development` with the IDs and credentials.
 
 ```bash
 NEXT_PUBLIC_BILLING_PRICE_PRO_MONTH_ID=
@@ -147,7 +148,7 @@ BILLING_STRIPE_WEBHOOK_SECRET=
 The starter kit supports Nodemailer (SMTP) and Resend.
 
 1. Choose an SMTP provider in `packages/email/provider/index.ts`.
-2. Update dashboard `apps/dashboard/.env` with SMTP credentials.
+2. Update dashboard `apps/dashboard/.env.development` with SMTP credentials.
 
 ```bash
 EMAIL_FROM=
