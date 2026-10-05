@@ -21,7 +21,7 @@ const INTERNAL_PACKAGES = [
 const nextConfig: NextConfig = {
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: INTERNAL_PACKAGES,
-  serverExternalPackages: [],
+  serverExternalPackages: ['sharp'],
   experimental: {
     optimizePackageImports: [
       'recharts',
