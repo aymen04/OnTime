@@ -37,6 +37,16 @@
       "archiver": "7.0.1",
       "unzipper": "0.12.3",
       "tree-sitter": "0.21.1"
+    },
+    "supportedArchitectures": {
+      "os": [
+        "current",
+        "linux"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
     }
   },
   "packageManager": "pnpm@9.12.0",
