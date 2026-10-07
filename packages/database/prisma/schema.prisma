@@ -75,6 +75,25 @@ enum WebhookTrigger {
   CONTACT_DELETED @map("contactDeleted")
 }
 
+enum TicketType {
+  TIME_OFF @map("time_off")
+  ISSUE    @map("issue")
+}
+
+enum TicketStatus {
+  PENDING  @map("pending")
+  APPROVED @map("approved")
+  REJECTED @map("rejected")
+}
+
+enum ShiftSwapStatus {
+  PENDING_EMPLOYEE @map("pending_employee")
+  PENDING_MANAGER  @map("pending_manager")
+  APPROVED         @map("approved")
+  REJECTED         @map("rejected")
+}
+
+
 // ---- Models ---- //
 
 model Account {
@@ -299,6 +318,8 @@ model Membership {
   createdAt      DateTime     @default(now())
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  workRoleId     String?      @db.Uuid
+  workRole       WorkRole?    @relation(fields: [workRoleId], references: [id], onDelete: SetNull)
 
   @@unique([organizationId, userId])
 }
@@ -379,6 +400,14 @@ model Organization {
   orders            Order[]
   subscriptions     Subscription[]
   webhooks          Webhook[]
+  latitude          Float?
+  longitude         Float?
+  workRoles         WorkRole[]
+  availabilities    Availability[]
+  shifts            Shift[]
+  tickets           Ticket[]
+  shiftSwapRequests ShiftSwapRequest[]
+  timeEntries       TimeEntry[]
 
   @@index([billingCustomerId], map: "IX_Organization_billingCustomerId")
 }
@@ -480,6 +509,13 @@ model User {
   notifications                Notification[]
   pageVisits                   ContactPageVisit[]
   sessions                     Session[]
+  availabilities               Availability[]
+  shiftsAsEmployee              Shift[] @relation("ShiftEmployee")
+  shiftsCreated                 Shift[] @relation("ShiftCreatedBy")
+  tickets                        Ticket[]
+  shiftSwapRequestsSent          ShiftSwapRequest[] @relation("ShiftSwapRequester")
+  shiftSwapRequestsReceived      ShiftSwapRequest[] @relation("ShiftSwapTarget")
+  timeEntries                    TimeEntry[]
 }
 
 model UserImage {
@@ -531,4 +567,118 @@ model WorkTimeSlot {
   workHours   WorkHours @relation(fields: [workHoursId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([workHoursId], map: "IX_WorkTimeSlot_workHoursId")
+}
+
+model WorkRole {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  name           String       @db.VarChar(32) // "manager" ou "employee"
+  permissions    Json         @default("{}")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  memberships    Membership[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+
+model Availability {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  userId         String       @db.Uuid
+  dayOfWeek      DayOfWeek
+  startMinutes   Int
+  endMinutes     Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, dayOfWeek])
+  @@index([userId])
+}
+
+model Shift {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  employeeId     String       @db.Uuid
+  startTime      DateTime
+  endTime        DateTime
+  positionLabel  String?      @db.VarChar(255)
+  notes          String?      @db.VarChar(2000)
+  createdById    String?      @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee       User         @relation("ShiftEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy      User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  swapRequests   ShiftSwapRequest[]
+  timeEntries    TimeEntry[]
+
+  @@index([organizationId, startTime])
+  @@index([employeeId, startTime])
+}
+
+
+model Ticket {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  authorId       String       @db.Uuid
+  type           TicketType
+  title          String       @db.VarChar(255)
+  body           String?      @db.VarChar(4000)
+  status         TicketStatus @default(PENDING)
+  startDate      DateTime?    @db.Date
+  endDate        DateTime?    @db.Date
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([authorId])
+}
+
+model ShiftSwapRequest {
+  id                String          @id @default(uuid()) @db.Uuid
+  organizationId    String          @db.Uuid
+  shiftId           String          @db.Uuid
+  requesterId       String          @db.Uuid
+  targetEmployeeId  String          @db.Uuid
+  status            ShiftSwapStatus @default(PENDING_EMPLOYEE)
+  message           String?         @db.VarChar(1000)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shift             Shift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  requester         User            @relation("ShiftSwapRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  targetEmployee    User            @relation("ShiftSwapTarget", fields: [targetEmployeeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([targetEmployeeId, status])
+  @@index([requesterId])
+}
+
+model TimeEntry {
+  id                      String       @id @default(uuid()) @db.Uuid
+  organizationId          String       @db.Uuid
+  employeeId              String       @db.Uuid
+  shiftId                 String?      @db.Uuid
+  clockInTime             DateTime     @default(now())
+  clockInLat              Float
+  clockInLng              Float
+  clockInDistanceMeters   Float
+  clockInFlagged          Boolean      @default(false)
+  clockOutTime            DateTime?
+  clockOutLat             Float?
+  clockOutLng             Float?
+  clockOutDistanceMeters  Float?
+  clockOutFlagged         Boolean      @default(false)
+  createdAt               DateTime     @default(now())
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee                User         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift                   Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, clockInTime])
+  @@index([employeeId, clockInTime])
 }
