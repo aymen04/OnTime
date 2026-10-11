@@ -1,5 +1,8 @@
 'use server';
-
+import {
+  EMPLOYEE_PERMISSIONS,
+  MANAGER_PERMISSIONS
+} from '@workspace/auth/work-role';
 import { createHash } from 'crypto';
 import { revalidateTag } from 'next/cache';
 import { v4 } from 'uuid';
@@ -248,6 +251,8 @@ async function handleOrganizationStep(
     console.error(e);
   }
 
+  const managerRoleId = v4();
+
   transactions.push(
     prisma.organization.create({
       data: {
@@ -258,6 +263,16 @@ async function handleOrganizationStep(
         businessHours: createDefaultBusinessHours(),
         billingCustomerId,
         billingEmail: billingCustomerId ? userEmail : undefined,
+        workRoles: {
+          create: [
+            {
+              id: managerRoleId,
+              name: 'manager',
+              permissions: MANAGER_PERMISSIONS
+            },
+            { name: 'employee', permissions: EMPLOYEE_PERMISSIONS }
+          ]
+        },
         memberships: {
           create: {
             userId,
@@ -266,6 +281,11 @@ async function handleOrganizationStep(
           }
         }
       }
+    }),
+    // Link the owner's membership to the manager work role
+    prisma.membership.update({
+      where: { organizationId_userId: { organizationId, userId } },
+      data: { workRoleId: managerRoleId }
     })
   );
 }
@@ -296,12 +316,24 @@ async function handlePendingInvitationsStep(
       continue;
     }
 
+    // CORRECTION : On va chercher le bon rôle "employee" dans la BDD pour cette organisation
+    const employeeRole = await prisma.workRole.findFirst({
+      where: {
+        organizationId: pendingInvitation.organizationId,
+        name: 'employee'
+      },
+      select: {
+        id: true
+      }
+    });
+
     transactions.push(
       prisma.membership.create({
         data: {
           userId,
           organizationId: pendingInvitation.organizationId,
-          role: pendingInvitation.role
+          role: pendingInvitation.role,
+          workRoleId: employeeRole?.id ?? undefined
         }
       }),
       prisma.invitation.update({

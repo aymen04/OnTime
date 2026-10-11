@@ -57,6 +57,7 @@
     "./redirect": "./src/redirect.ts",
     "./schemas": "./src/schemas.ts",
     "./session": "./src/session.ts",
-    "./verification": "./src/verification.ts"
+    "./verification": "./src/verification.ts",
+    "./work-role": "./src/work-role.ts"
   }
 }

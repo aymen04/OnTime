@@ -3,6 +3,7 @@
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import { getEmployeeWorkRoleId } from '@workspace/auth/work-role';
 import { adjustSeats } from '@workspace/billing/seats';
 import { NotFoundError, PreConditionError } from '@workspace/common/errors';
 import { InvitationStatus } from '@workspace/database';
@@ -47,6 +48,10 @@ export const acceptInvitation = authActionClient
       throw new NotFoundError('Organization not found');
     }
 
+    const employeeRoleId = await getEmployeeWorkRoleId(
+      invitation.organizationId
+    );
+
     await prisma.$transaction([
       prisma.invitation.updateMany({
         where: { id: parsedInput.invitationId },
@@ -56,7 +61,8 @@ export const acceptInvitation = authActionClient
         data: {
           organizationId: invitation.organizationId,
           userId: ctx.session.user.id,
-          role: invitation.role
+          role: invitation.role,
+          workRoleId: employeeRoleId ?? undefined
         },
         select: {
           id: true // SELECT NONE
