@@ -25,6 +25,7 @@ import { getManagerPendingRequests } from '~/data/shift-swap/get-manager-pending
 import { getReceivedSwapRequests } from '~/data/shift-swap/get-employee-swap-requests';
 import { getEmployeeMetrics } from '~/data/dashboard/get-employee-metrics';
 import { getManagerMetrics } from '~/data/dashboard/get-manager-metrics';
+import { ClockButton } from '../../_components/clock-button';
 
 export const metadata: Metadata = {
   title: createTitle('Tableau de bord')
@@ -189,6 +190,12 @@ export default async function HomeLayout(props: {
                           {" - "} 
                           {new Date(employeeMetrics.nextShift.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </p>
+                        <ClockButton 
+                          orgId={orgId} 
+                          nextShift={employeeMetrics.nextShift} 
+                          activeTimeEntry={employeeMetrics.activeTimeEntry} 
+                        />
+                
                       </div>
                     ) : (
                       <p className="text-muted-foreground">Vous n'avez aucun shift à venir. Profitez du repos !</p>
