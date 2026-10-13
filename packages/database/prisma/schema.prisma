@@ -93,7 +93,6 @@ enum ShiftSwapStatus {
   REJECTED         @map("rejected")
 }
 
-
 // ---- Models ---- //
 
 model Account {
@@ -369,28 +368,28 @@ model OrderItem {
 }
 
 model Organization {
-  id                String         @id(map: "PK_Organization") @default(uuid()) @db.Uuid
-  slug              String         @unique @db.VarChar(255)
-  logo              String?        @db.VarChar(2048)
-  name              String         @db.VarChar(255)
-  address           String?        @db.VarChar(255)
-  phone             String?        @db.VarChar(32)
-  email             String?        @db.VarChar(255)
-  website           String?        @db.VarChar(2000)
-  linkedInProfile   String?        @db.VarChar(2000)
-  instagramProfile  String?        @db.VarChar(2000)
-  youTubeChannel    String?        @db.VarChar(2000)
-  xProfile          String?        @db.VarChar(2000)
-  tikTokProfile     String?        @db.VarChar(2000)
-  facebookPage      String?        @db.VarChar(2000)
+  id                String             @id(map: "PK_Organization") @default(uuid()) @db.Uuid
+  slug              String             @unique @db.VarChar(255)
+  logo              String?            @db.VarChar(2048)
+  name              String             @db.VarChar(255)
+  address           String?            @db.VarChar(255)
+  phone             String?            @db.VarChar(32)
+  email             String?            @db.VarChar(255)
+  website           String?            @db.VarChar(2000)
+  linkedInProfile   String?            @db.VarChar(2000)
+  instagramProfile  String?            @db.VarChar(2000)
+  youTubeChannel    String?            @db.VarChar(2000)
+  xProfile          String?            @db.VarChar(2000)
+  tikTokProfile     String?            @db.VarChar(2000)
+  facebookPage      String?            @db.VarChar(2000)
   billingCustomerId String?
-  billingEmail      String?        @db.VarChar(255)
-  billingLine1      String?        @db.VarChar(255)
-  billingLine2      String?        @db.VarChar(255)
-  billingCountry    String?        @db.VarChar(3)
-  billingPostalCode String?        @db.VarChar(16)
-  billingCity       String?        @db.VarChar(255)
-  billingState      String?        @db.VarChar(255)
+  billingEmail      String?            @db.VarChar(255)
+  billingLine1      String?            @db.VarChar(255)
+  billingLine2      String?            @db.VarChar(255)
+  billingCountry    String?            @db.VarChar(3)
+  billingPostalCode String?            @db.VarChar(16)
+  billingCity       String?            @db.VarChar(255)
+  billingState      String?            @db.VarChar(255)
   apiKeys           ApiKey[]
   businessHours     WorkHours[]
   contacts          Contact[]
@@ -408,6 +407,7 @@ model Organization {
   tickets           Ticket[]
   shiftSwapRequests ShiftSwapRequest[]
   timeEntries       TimeEntry[]
+  TimeOffRequest    TimeOffRequest[]
 
   @@index([billingCustomerId], map: "IX_Organization_billingCustomerId")
 }
@@ -510,12 +510,13 @@ model User {
   pageVisits                   ContactPageVisit[]
   sessions                     Session[]
   availabilities               Availability[]
-  shiftsAsEmployee              Shift[] @relation("ShiftEmployee")
-  shiftsCreated                 Shift[] @relation("ShiftCreatedBy")
-  tickets                        Ticket[]
-  shiftSwapRequestsSent          ShiftSwapRequest[] @relation("ShiftSwapRequester")
-  shiftSwapRequestsReceived      ShiftSwapRequest[] @relation("ShiftSwapTarget")
-  timeEntries                    TimeEntry[]
+  shiftsAsEmployee             Shift[]              @relation("ShiftEmployee")
+  shiftsCreated                Shift[]              @relation("ShiftCreatedBy")
+  tickets                      Ticket[]
+  shiftSwapRequestsSent        ShiftSwapRequest[]   @relation("ShiftSwapRequester")
+  shiftSwapRequestsReceived    ShiftSwapRequest[]   @relation("ShiftSwapTarget")
+  timeEntries                  TimeEntry[]
+  TimeOffRequest               TimeOffRequest[]
 }
 
 model UserImage {
@@ -581,7 +582,6 @@ model WorkRole {
   @@index([organizationId])
 }
 
-
 model Availability {
   id             String       @id @default(uuid()) @db.Uuid
   organizationId String       @db.Uuid
@@ -599,26 +599,25 @@ model Availability {
 }
 
 model Shift {
-  id             String       @id @default(uuid()) @db.Uuid
-  organizationId String       @db.Uuid
-  employeeId     String       @db.Uuid
+  id             String             @id @default(uuid()) @db.Uuid
+  organizationId String             @db.Uuid
+  employeeId     String             @db.Uuid
   startTime      DateTime
   endTime        DateTime
-  positionLabel  String?      @db.VarChar(255)
-  notes          String?      @db.VarChar(2000)
-  createdById    String?      @db.Uuid
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  employee       User         @relation("ShiftEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
-  createdBy      User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  positionLabel  String?            @db.VarChar(255)
+  notes          String?            @db.VarChar(2000)
+  createdById    String?            @db.Uuid
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee       User               @relation("ShiftEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  createdBy      User?              @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   swapRequests   ShiftSwapRequest[]
   timeEntries    TimeEntry[]
 
   @@index([organizationId, startTime])
   @@index([employeeId, startTime])
 }
-
 
 model Ticket {
   id             String       @id @default(uuid()) @db.Uuid
@@ -640,19 +639,19 @@ model Ticket {
 }
 
 model ShiftSwapRequest {
-  id                String          @id @default(uuid()) @db.Uuid
-  organizationId    String          @db.Uuid
-  shiftId           String          @db.Uuid
-  requesterId       String          @db.Uuid
-  targetEmployeeId  String          @db.Uuid
-  status            ShiftSwapStatus @default(PENDING_EMPLOYEE)
-  message           String?         @db.VarChar(1000)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  shift             Shift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  requester         User            @relation("ShiftSwapRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-  targetEmployee    User            @relation("ShiftSwapTarget", fields: [targetEmployeeId], references: [id], onDelete: Cascade)
+  id               String          @id @default(uuid()) @db.Uuid
+  organizationId   String          @db.Uuid
+  shiftId          String          @db.Uuid
+  requesterId      String          @db.Uuid
+  targetEmployeeId String          @db.Uuid
+  status           ShiftSwapStatus @default(PENDING_EMPLOYEE)
+  message          String?         @db.VarChar(1000)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shift            Shift           @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  requester        User            @relation("ShiftSwapRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  targetEmployee   User            @relation("ShiftSwapTarget", fields: [targetEmployeeId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, status])
   @@index([targetEmployeeId, status])
@@ -660,25 +659,45 @@ model ShiftSwapRequest {
 }
 
 model TimeEntry {
-  id                      String       @id @default(uuid()) @db.Uuid
-  organizationId          String       @db.Uuid
-  employeeId              String       @db.Uuid
-  shiftId                 String?      @db.Uuid
-  clockInTime             DateTime     @default(now())
-  clockInLat              Float
-  clockInLng              Float
-  clockInDistanceMeters   Float
-  clockInFlagged          Boolean      @default(false)
-  clockOutTime            DateTime?
-  clockOutLat             Float?
-  clockOutLng             Float?
-  clockOutDistanceMeters  Float?
-  clockOutFlagged         Boolean      @default(false)
-  createdAt               DateTime     @default(now())
-  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  employee                User         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  shift                   Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  id                     String       @id @default(uuid()) @db.Uuid
+  organizationId         String       @db.Uuid
+  employeeId             String       @db.Uuid
+  shiftId                String?      @db.Uuid
+  clockInTime            DateTime     @default(now())
+  clockInLat             Float
+  clockInLng             Float
+  clockInDistanceMeters  Float
+  clockInFlagged         Boolean      @default(false)
+  clockOutTime           DateTime?
+  clockOutLat            Float?
+  clockOutLng            Float?
+  clockOutDistanceMeters Float?
+  clockOutFlagged        Boolean      @default(false)
+  createdAt              DateTime     @default(now())
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee               User         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  shift                  Shift?       @relation(fields: [shiftId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, clockInTime])
   @@index([employeeId, clockInTime])
+}
+
+model TimeOffRequest {
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
+  employeeId     String   @db.Uuid // <-- La correction est ici !
+  
+  startDate      DateTime
+  endDate        DateTime
+  reason         String?
+  status         String   @default("pending")
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee       User         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([employeeId])
 }

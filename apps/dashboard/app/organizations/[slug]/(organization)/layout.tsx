@@ -15,6 +15,7 @@ import { getFavorites } from '~/data/favorites/get-favorites';
 import { getOrganizations } from '~/data/organization/get-organizations';
 import { createTitle } from '~/lib/formatters';
 import { Providers } from './providers';
+ 
 
 export const metadata: Metadata = {
   title: createTitle('Organization')

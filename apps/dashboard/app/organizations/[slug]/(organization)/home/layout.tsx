@@ -19,13 +19,17 @@ import {
 import { OrganizationPageTitle } from '~/components/organizations/slug/organization-page-title';
 import { TransitionProvider } from '~/hooks/use-transition-context';
 import { createTitle } from '~/lib/formatters';
+import { ClockButton } from '../../_components/clock-button';
+import { TimeOffForm } from '../../_components/time-off-form';
+import { getEmployeeTimeOffRequests } from '../../../../../data/time-off/get-employee-time-off';
+import { TimeOffList } from '../../../../../app/organizations/[slug]/_components/time-off-list';
 
 // Imports de nos actions et métriques
 import { getManagerPendingRequests } from '~/data/shift-swap/get-manager-pending-requests';
 import { getReceivedSwapRequests } from '~/data/shift-swap/get-employee-swap-requests';
 import { getEmployeeMetrics } from '~/data/dashboard/get-employee-metrics';
 import { getManagerMetrics } from '~/data/dashboard/get-manager-metrics';
-import { ClockButton } from '../../_components/clock-button';
+
 
 export const metadata: Metadata = {
   title: createTitle('Tableau de bord')
@@ -55,6 +59,8 @@ export default async function HomeLayout(props: {
 
   const role = await getCurrentWorkRole(orgId, userId);
   const isManager = role?.name === 'manager';
+
+  const timeOffRequests = await getEmployeeTimeOffRequests(organization.id, session.user.id);
 
   // Préparation des données (Data Layer)
   let pendingManagerRequests = [];
@@ -201,7 +207,7 @@ export default async function HomeLayout(props: {
                       <p className="text-muted-foreground">Vous n'avez aucun shift à venir. Profitez du repos !</p>
                     )}
                   </div>
-
+                    
                   <div className="grid grid-rows-2 gap-6">
                     {/* Demandes reçues */}
                     <div className="flex flex-col justify-center p-6 rounded-xl border bg-card shadow-sm">
@@ -225,7 +231,8 @@ export default async function HomeLayout(props: {
                     </div>
                   </div>
                 </div>
-
+                <TimeOffForm orgId={organization.id} />
+                <TimeOffList requests={timeOffRequests} />
                 {/* Ligne 2 : Planning de la semaine (Grille) */}
                 <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
                   <h3 className="font-semibold tracking-tight text-lg mb-4">Mes shifts de la semaine</h3>
