@@ -8,7 +8,8 @@ import {
   StoreIcon,
   UserIcon,
   UserPlus2Icon,
-  UsersIcon
+  UsersIcon,
+  CalendarIcon
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -35,13 +36,11 @@ export function createMainNavItems(slug: string): NavItem[] {
       icon: UsersIcon
     },
     {
-      title: 'Settings',
-      href: replaceOrgSlug(
-        routes.dashboard.organizations.slug.settings.Index,
-        slug
-      ),
-      icon: SettingsIcon
-    }
+      title: 'Planificateur',
+      href: `/organizations/${slug}/schedule`,
+      icon: CalendarIcon,
+    },
+   
   ];
 }
 
