@@ -29,6 +29,7 @@ import { getManagerPendingRequests } from '~/data/shift-swap/get-manager-pending
 import { getReceivedSwapRequests } from '~/data/shift-swap/get-employee-swap-requests';
 import { getEmployeeMetrics } from '~/data/dashboard/get-employee-metrics';
 import { getManagerMetrics } from '~/data/dashboard/get-manager-metrics';
+import { ManagerAlertsWidget } from '../../_components/manager-alerts-widget';
 
 
 export const metadata: Metadata = {
@@ -109,7 +110,7 @@ export default async function HomeLayout(props: {
                 
                 {/* Ligne 1 : Indicateurs Clés (KPI) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  
+                <ManagerAlertsWidget orgId={organization.id} slug={params.slug} />
                   {/* KPI 1 : Action Center */}
                   <div className="flex flex-col gap-2 p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
                     <h3 className="font-semibold tracking-tight text-lg">Approbations requises</h3>
