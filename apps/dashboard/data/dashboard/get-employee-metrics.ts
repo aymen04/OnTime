@@ -53,6 +53,7 @@ export async function getEmployeeMetrics(orgId: string, userId: string) {
   // 5. Vérifier s'il y a un pointage en cours
   const activeTimeEntry = await prisma.timeEntry.findFirst({
     where: {
+      organizationId: orgId, // <-- Ajoute cette précision
       employeeId: userId,
       clockOutTime: null,
     }

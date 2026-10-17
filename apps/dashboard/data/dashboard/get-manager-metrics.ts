@@ -1,53 +1,57 @@
 import { prisma } from '@workspace/database/client';
 
 export async function getManagerMetrics(orgId: string) {
-  const now = new Date();
-  
-  // Aujourd'hui (Minuit à 23h59)
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const endOfToday = new Date(now);
-  endOfToday.setHours(23, 59, 59, 999);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // Semaine en cours
+  // 1. Shifts du jour (Prévus)
+  const todayShifts = await prisma.shift.findMany({
+    where: { organizationId: orgId, startTime: { gte: today, lt: tomorrow } },
+    include: { employee: { select: { id: true, name: true, email: true } } },
+    orderBy: { startTime: 'asc' }
+  });
+
+  // 2. Présences du jour
+  const todayAttendances = await prisma.timeEntry.findMany({
+    where: { organizationId: orgId, clockInTime: { gte: today, lt: tomorrow } }
+  });
+
+  // Calcul du Live Status
+  const prevus = todayShifts.length;
+  const enPoste = todayAttendances.filter(a => !a.clockOutTime).length;
+  
+  // En retard : Shifts qui ont déjà commencé, mais l'employé n'a pas de TimeEntry
+  const now = new Date();
+  let enRetard = 0;
+  todayShifts.forEach(shift => {
+    if (new Date(shift.startTime) < now) {
+      const hasClockedIn = todayAttendances.some(a => a.employeeId === shift.employeeId);
+      if (!hasClockedIn) enRetard++;
+    }
+  });
+
+  // Calcul basique pour la semaine
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
   startOfWeek.setHours(0, 0, 0, 0);
-  
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
 
-  // 1. Le Roster du jour (Qui travaille aujourd'hui, avec leurs infos)
-  const todayRoster = await prisma.shift.findMany({
-    where: {
-      organizationId: orgId,
-      startTime: { gte: startOfToday, lte: endOfToday },
-    },
-    include: {
-      employee: { select: { id: true, name: true, email: true } }
-    },
-    orderBy: { startTime: 'asc' },
+  const weeklyShifts = await prisma.shift.findMany({
+    where: { organizationId: orgId, startTime: { gte: startOfWeek, lte: endOfWeek } }
   });
 
-  // 2. Les shifts de toute l'équipe pour la semaine
-  const teamWeeklyShifts = await prisma.shift.findMany({
-    where: {
-      organizationId: orgId,
-      startTime: { gte: startOfWeek, lte: endOfWeek },
-    },
-    select: { startTime: true, endTime: true }
+  let totalTeamHours = 0;
+  weeklyShifts.forEach(s => {
+    totalTeamHours += (new Date(s.endTime).getTime() - new Date(s.startTime).getTime()) / (1000 * 60 * 60);
   });
-
-  // 3. Calcul de la couverture globale (total des heures planifiées de l'équipe)
-  const totalTeamHours = teamWeeklyShifts.reduce((total, shift) => {
-    const durationMs = new Date(shift.endTime).getTime() - new Date(shift.startTime).getTime();
-    return total + (durationMs / (1000 * 60 * 60));
-  }, 0);
 
   return {
-    todayRoster,
-    totalTeamHours: Math.round(totalTeamHours * 10) / 10,
-    totalWeeklyShifts: teamWeeklyShifts.length,
+    todayRoster: todayShifts,
+    liveStatus: { prevus, enPoste, enRetard },
+    totalTeamHours: Math.round(totalTeamHours),
+    totalWeeklyShifts: weeklyShifts.length
   };
 }

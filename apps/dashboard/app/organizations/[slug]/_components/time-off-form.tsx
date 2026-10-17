@@ -23,7 +23,7 @@ export function TimeOffForm({ orgId }: { orgId: string }) {
     startTransition(async () => {
       const result = await submitTimeOffRequest(orgId, startDate, endDate, reason);
       if (result && result.success) {
-        setMessage({ text: "Demande envoyée avec succès ! 🌴", type: 'success' });
+        setMessage({ text: "Demande envoyée avec succès !", type: 'success' });
         // On ferme la modale après 2 secondes
         setTimeout(() => {
           setIsOpen(false);

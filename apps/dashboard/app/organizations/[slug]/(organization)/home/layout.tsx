@@ -31,7 +31,10 @@ import { getEmployeeMetrics } from '~/data/dashboard/get-employee-metrics';
 import { getManagerMetrics } from '~/data/dashboard/get-manager-metrics';
 import { ManagerAlertsWidget } from '../../_components/manager-alerts-widget';
 import { EmployeeWeeklyProgress } from '../../_components/employee-weekly-progress';
-
+import { CalendarPlusIcon, CalendarIcon } from 'lucide-react';
+// Vérifie que le nom de ce fichier correspond bien au nom de ton composant
+import { EmployeeNotificationBanner } from '../../_components/employee-notification-banner';
+import { EmployeeUpcomingShifts } from '../../_components/employee-upcoming-shifts';
 
 export const metadata: Metadata = {
   title: createTitle('Tableau de bord')
@@ -109,53 +112,50 @@ export default async function HomeLayout(props: {
             {isManager && managerMetrics && (
               <div className="space-y-6">
                 
+                {/* 1. WIDGET : Actions Requises */}
                 <ManagerAlertsWidget orgId={organization.id} slug={params.slug} />
 
-                {/* Ligne 1 : Indicateurs Clés (KPI) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* KPI 1 : Action Center */}
-                  <div className="flex flex-col gap-2 p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-                    <h3 className="font-semibold tracking-tight text-lg">Approbations requises</h3>
-                    {pendingManagerRequests.length > 0 ? (
-                      <>
-                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                          {pendingManagerRequests.length}
-                        </p>
-                        <p className="text-sm text-muted-foreground">demande(s) d'échange en attente</p>
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-2">Toutes les demandes ont été traitées.</p>
-                    )}
-                  </div>
+                {/* 2. QUICK ACTIONS (Raccourcis visuels) */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-2">
+                  <Link href={`/organizations/${params.slug}/schedule`} className={buttonVariants({ variant: 'default', size: 'lg' })}>
+                    <CalendarPlusIcon className="mr-2 size-5" /> Créer un nouveau shift
+                  </Link>
+                  <Link href={`/organizations/${params.slug}/schedule`} className={buttonVariants({ variant: 'outline', size: 'lg' })}>
+                    <CalendarIcon className="mr-2 size-5" /> Voir le planning de la semaine
+                  </Link>
+                </div>
 
-                  {/* KPI 2 : Heures semaine équipe */}
-                  <div className="flex flex-col gap-2 p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-                    <h3 className="font-semibold tracking-tight text-lg">Volume d'équipe (Semaine)</h3>
-                    <p className="text-3xl font-bold">{managerMetrics.totalTeamHours} <span className="text-xl font-medium text-muted-foreground">h</span></p>
-                    <p className="text-sm text-muted-foreground">
-                      Réparties sur {managerMetrics.totalWeeklyShifts} shifts prévus
-                    </p>
-                  </div>
-                  
-                  {/* KPI 3 : Présences du jour */}
-                  <div className="flex flex-col gap-2 p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-                    <h3 className="font-semibold tracking-tight text-lg">Effectif du jour</h3>
-                    <p className="text-3xl font-bold text-green-600 dark:text-green-500">
-                      {managerMetrics.todayRoster.length}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      employé(s) planifié(s) aujourd'hui
-                    </p>
+                {/* 3. WIDGET : L'Équipe Aujourd'hui (Live Status) */}
+                <div className="p-6 rounded-xl border bg-card shadow-sm">
+                  <h3 className="font-semibold tracking-tight text-lg mb-4 text-primary">L'Équipe Aujourd'hui</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 divide-y md:divide-y-0 md:divide-x">
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <p className="text-4xl font-bold text-foreground">{managerMetrics.liveStatus.prevus}</p>
+                      <p className="text-sm font-medium text-muted-foreground mt-1">Prévus aujourd'hui</p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <p className="text-4xl font-bold text-blue-600 dark:text-blue-500">{managerMetrics.liveStatus.enPoste}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="size-2 rounded-full bg-blue-500 animate-pulse"></span>
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-500">En poste actuellement</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <p className={`text-4xl font-bold ${managerMetrics.liveStatus.enRetard > 0 ? 'text-red-600 dark:text-red-500' : 'text-green-600 dark:text-green-500'}`}>
+                        {managerMetrics.liveStatus.enRetard}
+                      </p>
+                      <p className="text-sm font-medium text-muted-foreground mt-1">En retard / Absents</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Ligne 2 : Roster Détaillé (Le planning du jour) */}
+                {/* 4. Roster Détaillé (Le planning du jour) */}
                 <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-                  <h3 className="font-semibold tracking-tight text-lg mb-4">Planning du jour</h3>
+                  <h3 className="font-semibold tracking-tight text-lg mb-4">Planning du jour détaillé</h3>
                   {managerMetrics.todayRoster.length > 0 ? (
                     <div className="divide-y">
                       {managerMetrics.todayRoster.map((shift: any) => (
-                        <div key={shift.id} className="py-4 flex justify-between items-center">
+                        <div key={shift.id} className="py-4 flex justify-between items-center hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-lg">
                           <div>
                             <p className="font-medium">{shift.employee.name}</p>
                             <p className="text-sm text-muted-foreground">{shift.employee.email}</p>
@@ -176,21 +176,38 @@ export default async function HomeLayout(props: {
             )}
 
 
-            {/* =========================================
+           {/* =========================================
                 VUE EMPLOYÉ (L'Assistant Personnel)
             ========================================= */}
             {!isManager && employeeMetrics && (
               <div className="space-y-6">
                 
+                {/* 1. NOTIFICATIONS ÉPHÉMÈRES */}
+                <EmployeeNotificationBanner requests={timeOffRequests} />
+
                 {/* LIGNE 1 : Actions immédiates et Objectifs */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   
                   {/* Prochain Shift + Bouton de pointage (Hero Card) */}
                   <div className="flex flex-col justify-center p-8 rounded-xl border-2 border-primary/20 bg-primary/5 text-card-foreground shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-primary"></div>
-                    <h3 className="font-semibold tracking-tight text-lg text-primary mb-3">Mon prochain shift</h3>
-                    {employeeMetrics.nextShift ? (
+                    
+                    {employeeMetrics.activeTimeEntry ? (
                       <div>
+                        <h3 className="font-semibold tracking-tight text-lg text-red-500 mb-3">Action Requise</h3>
+                        <p className="text-xl font-bold mb-2">Shift en cours non clôturé</p>
+                        <p className="text-muted-foreground mb-6">
+                          Vous avez un pointage actif. Veuillez pointer votre départ pour enregistrer vos heures.
+                        </p>
+                        <ClockButton 
+                          orgId={orgId} 
+                          nextShift={employeeMetrics.nextShift} 
+                          activeTimeEntry={employeeMetrics.activeTimeEntry} 
+                        />
+                      </div>
+                    ) : employeeMetrics.nextShift ? (
+                      <div>
+                        <h3 className="font-semibold tracking-tight text-lg text-primary mb-3">Mon prochain shift</h3>
                         <p className="text-3xl font-bold mb-2 capitalize">
                           {new Date(employeeMetrics.nextShift.startTime).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
                         </p>
@@ -202,11 +219,14 @@ export default async function HomeLayout(props: {
                         <ClockButton 
                           orgId={orgId} 
                           nextShift={employeeMetrics.nextShift} 
-                          activeTimeEntry={employeeMetrics.activeTimeEntry} 
+                          activeTimeEntry={null} 
                         />
                       </div>
                     ) : (
-                      <p className="text-muted-foreground">Vous n'avez aucun shift à venir. Profitez du repos !</p>
+                      <div>
+                        <h3 className="font-semibold tracking-tight text-lg text-primary mb-3">Mon prochain shift</h3>
+                        <p className="text-muted-foreground">Vous n'avez aucun shift à venir. Profitez du repos !</p>
+                      </div>
                     )}
                   </div>
 
@@ -216,55 +236,31 @@ export default async function HomeLayout(props: {
                 </div>
 
                 {/* LIGNE 2 : Suivi & Historique (Grille équilibrée) */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
-                  {/* Colonne Gauche : Opérationnel */}
-                  <div className="space-y-6">
-                    {/* Demandes reçues */}
-                    <div className="flex items-center justify-between p-6 rounded-xl border bg-card shadow-sm">
-                      <div>
-                        <h3 className="font-semibold tracking-tight text-sm text-muted-foreground mb-1">Demandes d'échange reçues</h3>
-                        {pendingEmployeeRequests.length > 0 ? (
-                          <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-500">
-                            {pendingEmployeeRequests.length} nouvelle(s) demande(s)
-                          </p>
-                        ) : (
-                          <p className="text-lg font-medium">Aucune demande en attente</p>
-                        )}
-                      </div>
-                    </div>
+                  {/* Colonne Gauche (1/3) : Prochains Jours & Demandes */}
+                  <div className="space-y-6 md:col-span-1">
+                    <EmployeeUpcomingShifts 
+                      weeklyShifts={employeeMetrics.weeklyShifts} 
+                    />
 
-                    {/* Shifts de la semaine */}
-                    <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm">
-                      <h3 className="font-semibold tracking-tight text-lg mb-4">Mes shifts de la semaine</h3>
-                      {employeeMetrics.weeklyShifts.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                          {employeeMetrics.weeklyShifts.map((shift: any) => (
-                            <div key={shift.id} className="p-4 border rounded-lg bg-background flex flex-col justify-center items-center text-center shadow-sm">
-                              <p className="font-medium capitalize text-sm mb-1">
-                                {new Date(shift.startTime).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
-                              </p>
-                              <p className="text-sm font-semibold text-primary">
-                                {new Date(shift.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} 
-                                <br/>
-                                <span className="text-muted-foreground font-normal">à</span>
-                                <br/>
-                                {new Date(shift.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
+                    {/* Demandes reçues */}
+                    <div className="p-6 rounded-xl border bg-card shadow-sm">
+                      <h3 className="font-semibold tracking-tight text-sm text-muted-foreground mb-3">Échanges de shifts</h3>
+                      {pendingEmployeeRequests.length > 0 ? (
+                        <p className="text-xl font-bold text-yellow-600 dark:text-yellow-500">
+                          {pendingEmployeeRequests.length} demande(s)
+                        </p>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Aucun shift prévu cette semaine.</p>
+                        <p className="text-sm font-medium">Aucune demande en attente</p>
                       )}
                     </div>
                   </div>
 
-                  {/* Colonne Droite : Administratif (Congés) */}
-                  <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col h-full">
+                  {/* Colonne Droite (2/3) : Administratif (Congés) */}
+                  <div className="p-6 rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col h-full md:col-span-2">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold tracking-tight text-lg">Mes congés</h3>
-                      {/* Le composant TimeOffForm doit être mis à jour avec le code Dialog fourni précédemment */}
                       <TimeOffForm orgId={organization.id} />
                     </div>
                     <div className="flex-1">
