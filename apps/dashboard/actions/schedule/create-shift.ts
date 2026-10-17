@@ -27,7 +27,7 @@ export async function createShift(orgId: string, formData: FormData) {
       throw new Error("Seul un manager peut créer des shifts");
     }
 
-    // 2. Extraire et valider les données
+    // 2. Extraire et valider les données avec Zod
     const data = {
       employeeId: formData.get('employeeId') as string,
       startTime: formData.get('startTime') as string,
@@ -35,28 +35,45 @@ export async function createShift(orgId: string, formData: FormData) {
     };
 
     const validatedData = createShiftSchema.parse(data);
+    const shiftStart = new Date(validatedData.startTime);
+    const shiftEnd = new Date(validatedData.endTime);
 
-    // 3. Créer le shift dans la base de données
+    // 3. VÉRIFICATION DE SÉCURITÉ : L'employé est-il en congé approuvé sur ces dates ?
+    const conflictingTimeOff = await prisma.timeOffRequest.findFirst({
+      where: {
+        organizationId: orgId,
+        employeeId: validatedData.employeeId,
+        status: 'approved',
+        // Logique de chevauchement
+        startDate: { lte: shiftEnd },
+        endDate: { gte: shiftStart },
+      }
+    });
+
+    // S'il y a un conflit, on bloque la création
+    if (conflictingTimeOff) {
+      throw new Error("Impossible : L'employé a un congé approuvé sur cette période.");
+    }
+
+    // 4. CRÉATION DU SHIFT
     await prisma.shift.create({
       data: {
         organizationId: orgId,
         employeeId: validatedData.employeeId,
-        startTime: new Date(validatedData.startTime),
-        endTime: new Date(validatedData.endTime),
-        // Plus tard, on rajoutera ici des champs comme "status: 'SCHEDULED'" 
-        // pour ton futur système de tracking/pointeuse !
+        startTime: shiftStart,
+        endTime: shiftEnd,
       },
     });
 
-    // 4. Rafraîchir les pages pour que le nouveau shift apparaisse partout
+    // 5. Rafraîchir les pages pour que le nouveau shift apparaisse partout
     revalidatePath(`/organizations/${orgId}`);
     revalidatePath(`/organizations/${orgId}/schedule`);
 
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return { success: false, error: error.errors[0].message };
     }
-    return { success: false, error: "Une erreur est survenue lors de la création du shift" };
+    return { success: false, error: error.message || "Une erreur est survenue lors de la création du shift" };
   }
 }
