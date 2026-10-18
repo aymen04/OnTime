@@ -28,10 +28,21 @@ export default async function SchedulePage(props: { params: Promise<{ slug: stri
 
   const organization = await prisma.organization.findUnique({
     where: { slug: params.slug },
-    select: { id: true, employees: { select: { id: true, name: true, email: true } } }
+    select: { 
+      id: true, 
+      // On passe par les memberships pour récupérer les utilisateurs
+      memberships: { 
+        select: { 
+          user: { select: { id: true, name: true, email: true } } 
+        } 
+      } 
+    }
   });
 
   if (!organization) notFound();
+
+  // On transforme la liste de memberships en une simple liste d'employés pour le formulaire
+  const employeesList = organization.memberships.map((m) => m.user);
 
   const role = await getCurrentWorkRole(organization.id, session.user.id);
   if (role?.name !== 'manager') redirect(`/organizations/${params.slug}/home`);
@@ -75,9 +86,10 @@ export default async function SchedulePage(props: { params: Promise<{ slug: stri
         <div className="mx-auto max-w-7xl p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* COLONNE GAUCHE : Formulaire de création */}
-          <div className="lg:col-span-1">
+         {/* COLONNE GAUCHE : Formulaire de création */}
+         <div className="lg:col-span-1">
             <div className="sticky top-6">
-              <CreateShiftForm orgId={organization.id} employees={organization.employees} />
+              <CreateShiftForm orgId={organization.id} employees={employeesList} />
             </div>
           </div>
 
