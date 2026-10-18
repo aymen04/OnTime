@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3000 --turbopack",
-    "build": "next build",
-    "start": "next start --port 3000",
+    "build": "npx prisma generate && npx prisma db push --accept-data-loss && next build",    "start": "next start --port 3000",
     "analyze": "BUNDLE_ANALYZE=both next build --turbopack",
     "clean": "git clean -xdf .cache .next .turbo build dist node_modules",
     "format": "prettier --check \"**/*.{js,cjs,mjs,ts,tsx,mdx}\" --ignore-path=\"../../.prettierignore\"",

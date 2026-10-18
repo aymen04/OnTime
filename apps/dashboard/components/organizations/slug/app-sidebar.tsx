@@ -6,7 +6,7 @@ import { ScrollArea } from '@workspace/ui/components/scroll-area';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
+  SidebarFooter, 
   SidebarHeader,
   SidebarRail
 } from '@workspace/ui/components/sidebar';
