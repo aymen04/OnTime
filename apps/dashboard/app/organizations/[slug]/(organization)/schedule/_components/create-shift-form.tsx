@@ -29,6 +29,7 @@ export function CreateShiftForm({ orgId, employees }: { orgId: string, employees
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-6 border rounded-xl bg-card shadow-sm">
+      <input type="hidden" name="timezone" value={Intl.DateTimeFormat().resolvedOptions().timeZone} />
       <h3 className="font-semibold text-lg tracking-tight mb-2">Assigner un nouveau shift</h3>
       
       {error && (

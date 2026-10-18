@@ -5,12 +5,14 @@ import { auth } from '@workspace/auth';
 import { prisma } from '@workspace/database/client';
 import { getCurrentWorkRole } from '@workspace/auth/work-role';
 import { revalidatePath } from 'next/cache';
+import { fromZonedTime } from 'date-fns-tz'; // NOUVEL IMPORT
 
-// On sécurise les données envoyées par le formulaire avec Zod
+// Mise à jour du schéma pour inclure la timezone
 const createShiftSchema = z.object({
   employeeId: z.string().min(1, "L'employé est requis"),
   startTime: z.string().min(1, "L'heure de début est requise"),
   endTime: z.string().min(1, "L'heure de fin est requise"),
+  timezone: z.string().default('America/Toronto'), // Fallback de sécurité
 }).refine((data) => new Date(data.startTime) < new Date(data.endTime), {
   message: "L'heure de fin doit être après l'heure de début",
   path: ["endTime"],
@@ -21,68 +23,66 @@ export async function createShift(orgId: string, formData: FormData) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Non autorisé");
 
-    // 1. Vérifier que l'utilisateur est bien un manager
     const role = await getCurrentWorkRole(orgId, session.user.id);
     if (role?.name !== 'manager') {
       throw new Error("Seul un manager peut créer des shifts");
     }
 
-    // 2. Extraire et valider les données avec Zod
+    // Récupération des données y compris le champ caché
     const data = {
       employeeId: formData.get('employeeId') as string,
       startTime: formData.get('startTime') as string,
       endTime: formData.get('endTime') as string,
+      timezone: formData.get('timezone') as string,
     };
 
     const validatedData = createShiftSchema.parse(data);
-    const shiftStart = new Date(validatedData.startTime);
-    const shiftEnd = new Date(validatedData.endTime);
 
-    // 3. VÉRIFICATION DE SÉCURITÉ : L'employé est-il en congé approuvé sur ces dates ?
+    // LA MAGIE OPÈRE ICI : Conversion de l'heure locale en vraie Date pour la BDD
+    const shiftStart = fromZonedTime(validatedData.startTime, validatedData.timezone);
+    const shiftEnd = fromZonedTime(validatedData.endTime, validatedData.timezone);
+
+    // Vérification des congés
     const conflictingTimeOff = await prisma.timeOffRequest.findFirst({
       where: {
         organizationId: orgId,
         employeeId: validatedData.employeeId,
         status: 'approved',
-        // Logique de chevauchement
         startDate: { lte: shiftEnd },
         endDate: { gte: shiftStart },
       }
     });
 
-    // S'il y a un conflit, on bloque la création
     if (conflictingTimeOff) {
       throw new Error("Impossible : L'employé a un congé approuvé sur cette période.");
     }
 
+    // Création du shift
+    await prisma.shift.create({
+      data: {
+        organizationId: orgId,
+        employeeId: validatedData.employeeId,
+        startTime: shiftStart,
+        endTime: shiftEnd,
+      },
+    });
 
-  // 4. CRÉATION DU SHIFT
-  await prisma.shift.create({
-    data: {
-      organizationId: orgId,
-      employeeId: validatedData.employeeId,
-      startTime: shiftStart,
-      endTime: shiftEnd,
-    },
-  });
+    // Purge du cache
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { slug: true }
+    });
 
-  // 5. PURGE DU CACHE (CORRIGÉE)
-  // On doit trouver le 'slug' pour purger la bonne URL (ex: /organizations/testfactory/home)
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: { slug: true }
-  });
+    if (org) {
+      revalidatePath(`/organizations/${org.slug}/home`);
+      revalidatePath(`/organizations/${org.slug}/schedule`);
+    }
 
-  if (org) {
-    revalidatePath(`/organizations/${org.slug}/home`);
-    revalidatePath(`/organizations/${org.slug}/schedule`);
+    return { success: true };
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message };
+    }
+    return { success: false, error: error.message || "Une erreur est survenue lors de la création du shift" };
   }
-
-  return { success: true };
-} catch (error: any) {
-  if (error instanceof z.ZodError) {
-    return { success: false, error: error.errors[0].message };
-  }
-  return { success: false, error: error.message || "Une erreur est survenue lors de la création du shift" };
-}
 }
