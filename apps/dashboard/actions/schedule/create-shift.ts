@@ -55,25 +55,34 @@ export async function createShift(orgId: string, formData: FormData) {
       throw new Error("Impossible : L'employé a un congé approuvé sur cette période.");
     }
 
-    // 4. CRÉATION DU SHIFT
-    await prisma.shift.create({
-      data: {
-        organizationId: orgId,
-        employeeId: validatedData.employeeId,
-        startTime: shiftStart,
-        endTime: shiftEnd,
-      },
-    });
 
-    // 5. Rafraîchir les pages pour que le nouveau shift apparaisse partout
-    revalidatePath(`/organizations/${orgId}`);
-    revalidatePath(`/organizations/${orgId}/schedule`);
+  // 4. CRÉATION DU SHIFT
+  await prisma.shift.create({
+    data: {
+      organizationId: orgId,
+      employeeId: validatedData.employeeId,
+      startTime: shiftStart,
+      endTime: shiftEnd,
+    },
+  });
 
-    return { success: true };
-  } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: error.message || "Une erreur est survenue lors de la création du shift" };
+  // 5. PURGE DU CACHE (CORRIGÉE)
+  // On doit trouver le 'slug' pour purger la bonne URL (ex: /organizations/testfactory/home)
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { slug: true }
+  });
+
+  if (org) {
+    revalidatePath(`/organizations/${org.slug}/home`);
+    revalidatePath(`/organizations/${org.slug}/schedule`);
   }
+
+  return { success: true };
+} catch (error: any) {
+  if (error instanceof z.ZodError) {
+    return { success: false, error: error.errors[0].message };
+  }
+  return { success: false, error: error.message || "Une erreur est survenue lors de la création du shift" };
+}
 }

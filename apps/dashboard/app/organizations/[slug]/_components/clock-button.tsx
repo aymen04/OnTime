@@ -65,10 +65,15 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
 
   const isWorking = isPending || isLoadingGPS;
 
-  // VERIFICATION DE LA DATE DU SHIFT
-  // ⚠️ Remplace "startTime" par le vrai nom de ta colonne (ex: "start", "startAt") si besoin
+  // --- NOUVELLE LOGIQUE DE FENÊTRE DE POINTAGE (30 MINUTES) ---
   const shiftDate = nextShift ? new Date(nextShift.startTime) : null; 
-  const isShiftToday = shiftDate ? isToday(shiftDate) : false;
+  const now = new Date();
+  
+  // Calcule la différence en minutes. (Si négatif, le shift a déjà commencé)
+  const minutesUntilShift = shiftDate ? (shiftDate.getTime() - now.getTime()) / 60000 : Infinity;
+  
+  // Le bouton s'active SI c'est le bon jour ET qu'on est à 30 min ou moins du début
+  const isShiftReady = shiftDate ? (isToday(shiftDate) && minutesUntilShift <= 30) : false;
 
   // CAS 1 : L'employé a un pointage ouvert -> Bouton ROUGE (Départ)
   if (activeTimeEntry) {
@@ -92,22 +97,22 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
     );
   }
 
-  // CAS 2 : Pas de pointage en cours -> Bouton VERT (Arrivée) ou GRIS (Futur)
+  // CAS 2 : Pas de pointage en cours -> Bouton VERT (Arrivée) ou GRIS (Futur/Bloqué)
   return (
     <div className="mt-4 flex flex-col items-start gap-2">
       <Button 
         size="lg" 
         className={`rounded-full px-8 shadow-lg ${
-          isShiftToday 
+          isShiftReady 
             ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-900/20' 
             : 'bg-muted text-muted-foreground cursor-not-allowed'
         }`}
         onClick={handleClockIn}
-        disabled={isWorking || !nextShift || !isShiftToday}
+        disabled={isWorking || !nextShift || !isShiftReady}
       >
         {isLoadingGPS ? (
           <MapPinIcon className="mr-2 size-5 animate-bounce" />
-        ) : isShiftToday ? (
+        ) : isShiftReady ? (
           <LogInIcon className="mr-2 size-5" />
         ) : (
           <CalendarIcon className="mr-2 size-5" />
@@ -117,10 +122,10 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
           ? 'Localisation...' 
           : isPending 
           ? 'Enregistrement...' 
-          : isShiftToday 
+          : isShiftReady 
           ? 'Pointer mon arrivée' 
           : shiftDate 
-          ? `Shift prévu le ${format(shiftDate, 'dd MMM', { locale: fr })}` 
+          ? `Disponible 30 min avant le shift` 
           : 'Aucun shift'}
       </Button>
       {errorMsg && <p className="text-sm font-medium text-red-600 mt-1">{errorMsg}</p>}
