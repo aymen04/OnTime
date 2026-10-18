@@ -63,3 +63,9 @@ expo-env.d.ts
 
 # billing journal (local only — do not push)
 DEVLOG.md
+
+# Playwright
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

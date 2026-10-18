@@ -8,7 +8,8 @@ import {
   UserIcon,
   UserPlus2Icon,
   CalendarIcon,
-  ArrowRightLeftIcon // Ajout de l'icône pour les échanges
+  ArrowRightLeftIcon,
+  ClockIcon // Ajout de l'icône pour les disponibilités
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -39,6 +40,12 @@ export function createMainNavItems(slug: string): NavItem[] {
       title: 'Échanges de shifts',
       href: `/organizations/${slug}/swaps`,
       icon: ArrowRightLeftIcon,
+    },
+    // NOUVEAU LIEN : Mes disponibilités
+    {
+      title: 'Mes disponibilités',
+      href: `/organizations/${slug}/availabilities`,
+      icon: ClockIcon,
     }
   ];
 }
@@ -82,7 +89,5 @@ export function createOrganizationNavItems(slug: string): NavItem[] {
       href: replaceOrgSlug(routes.dashboard.organizations.slug.settings.organization.Billing, slug),
       icon: CreditCardIcon
     }
-    // J'ai supprimé l'onglet "Developers" qui sert souvent aux API dans les templates, 
-    // inutile pour un outil de pointage/planning classique.
   ];
 }
