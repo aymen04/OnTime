@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from 'react';
 import { Button } from '@workspace/ui/components/button';
-import { LogInIcon, LogOutIcon, MapPinIcon } from 'lucide-react';
+import { LogInIcon, LogOutIcon, MapPinIcon, CalendarIcon } from 'lucide-react';
+import { isToday, format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-// ⚠️ Assure-toi que ce chemin correspond à l'endroit où tu as sauvegardé ton fichier d'actions
 import { clockIn, clockOut } from '../../../../actions/time-tracking/time-clock';
 
 export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: string, nextShift: any, activeTimeEntry: any }) {
@@ -35,7 +36,6 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
       setIsLoadingGPS(false);
       
       startTransition(async () => {
-        // nextShift.id est requis selon ta nouvelle Server Action
         const result = await clockIn(orgId, nextShift.id, coords.lat, coords.lng);
         if (result?.error) setErrorMsg(result.error);
       });
@@ -54,7 +54,6 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
       setIsLoadingGPS(false);
       
       startTransition(async () => {
-        // activeTimeEntry.id est requis selon ta nouvelle Server Action
         const result = await clockOut(orgId, activeTimeEntry.id, coords.lat, coords.lng);
         if (result?.error) setErrorMsg(result.error);
       });
@@ -65,6 +64,11 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
   };
 
   const isWorking = isPending || isLoadingGPS;
+
+  // VERIFICATION DE LA DATE DU SHIFT
+  // ⚠️ Remplace "startTime" par le vrai nom de ta colonne (ex: "start", "startAt") si besoin
+  const shiftDate = nextShift ? new Date(nextShift.startTime) : null; 
+  const isShiftToday = shiftDate ? isToday(shiftDate) : false;
 
   // CAS 1 : L'employé a un pointage ouvert -> Bouton ROUGE (Départ)
   if (activeTimeEntry) {
@@ -88,17 +92,36 @@ export function ClockButton({ orgId, nextShift, activeTimeEntry }: { orgId: stri
     );
   }
 
-  // CAS 2 : Pas de pointage en cours -> Bouton VERT (Arrivée)
+  // CAS 2 : Pas de pointage en cours -> Bouton VERT (Arrivée) ou GRIS (Futur)
   return (
     <div className="mt-4 flex flex-col items-start gap-2">
       <Button 
         size="lg" 
-        className="rounded-full px-8 bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20"
+        className={`rounded-full px-8 shadow-lg ${
+          isShiftToday 
+            ? 'bg-green-600 hover:bg-green-700 text-white shadow-green-900/20' 
+            : 'bg-muted text-muted-foreground cursor-not-allowed'
+        }`}
         onClick={handleClockIn}
-        disabled={isWorking || !nextShift}
+        disabled={isWorking || !nextShift || !isShiftToday}
       >
-        {isLoadingGPS ? <MapPinIcon className="mr-2 size-5 animate-bounce" /> : <LogInIcon className="mr-2 size-5" />}
-        {isLoadingGPS ? 'Localisation...' : isPending ? 'Enregistrement...' : 'Pointer mon arrivée'}
+        {isLoadingGPS ? (
+          <MapPinIcon className="mr-2 size-5 animate-bounce" />
+        ) : isShiftToday ? (
+          <LogInIcon className="mr-2 size-5" />
+        ) : (
+          <CalendarIcon className="mr-2 size-5" />
+        )}
+        
+        {isLoadingGPS 
+          ? 'Localisation...' 
+          : isPending 
+          ? 'Enregistrement...' 
+          : isShiftToday 
+          ? 'Pointer mon arrivée' 
+          : shiftDate 
+          ? `Shift prévu le ${format(shiftDate, 'dd MMM', { locale: fr })}` 
+          : 'Aucun shift'}
       </Button>
       {errorMsg && <p className="text-sm font-medium text-red-600 mt-1">{errorMsg}</p>}
     </div>

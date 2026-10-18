@@ -3,7 +3,24 @@
 import { auth } from '@workspace/auth';
 import { prisma } from '@workspace/database/client';
 import { revalidatePath } from 'next/cache';
+import { isToday } from 'date-fns';
 
+
+export async function clockIn(orgId: string, shiftId: string, lat: number, lng: number) {
+  // 1. Récupère d'abord les infos du shift dans la BDD
+  const shift = await prisma.shift.findUnique({
+    where: { id: shiftId }
+  });
+
+  if (!shift) {
+    return { error: "Shift introuvable." };
+  }
+
+  // 2. VERIFICATION CRITIQUE : Le shift est-il aujourd'hui ?
+  if (!isToday(new Date(shift.startTime))) {
+    return { error: "Action refusée : Vous ne pouvez pointer que le jour de votre shift." };
+  }
+  
 // Fonction utilitaire pour sécuriser les coordonnées GPS
 function isValidGPS(lat: any, lng: any): boolean {
   if (typeof lat !== 'number' || typeof lng !== 'number') return false;
