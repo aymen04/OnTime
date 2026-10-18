@@ -32,7 +32,13 @@ import { getManagerMetrics } from '~/data/dashboard/get-manager-metrics';
 import { ManagerAlertsWidget } from '../../_components/manager-alerts-widget';
 import { EmployeeWeeklyProgress } from '../../_components/employee-weekly-progress';
 import { CalendarPlusIcon, CalendarIcon } from 'lucide-react';
-// Vérifie que le nom de ce fichier correspond bien au nom de ton composant
+import { MoreHorizontal, Edit, Trash2, UserPlus } from 'lucide-react';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@workspace/ui/components/dropdown-menu';
 import { EmployeeNotificationBanner } from '../../_components/employee-notification-banner';
 import { EmployeeUpcomingShifts } from '../../_components/employee-upcoming-shifts';
 
@@ -154,19 +160,50 @@ export default async function HomeLayout(props: {
                   <h3 className="font-semibold tracking-tight text-lg mb-4">Planning du jour détaillé</h3>
                   {managerMetrics.todayRoster.length > 0 ? (
                     <div className="divide-y">
-                      {managerMetrics.todayRoster.map((shift: any) => (
-                        <div key={shift.id} className="py-4 flex justify-between items-center hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-lg">
-                          <div>
-                            <p className="font-medium">{shift.employee.name}</p>
-                            <p className="text-sm text-muted-foreground">{shift.employee.email}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="inline-flex items-center rounded-md bg-secondary px-3 py-1 text-sm font-medium ring-1 ring-inset ring-secondary/50">
-                              {new Date(shift.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(shift.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                     {managerMetrics.todayRoster.map((shift: any) => (
+  <div key={shift.id} className="py-4 flex justify-between items-center hover:bg-muted/30 transition-colors px-2 -mx-2 rounded-lg">
+    <div>
+      <p className="font-medium">{shift.employee.name || shift.employee.email}</p>
+      {shift.employee.name && <p className="text-sm text-muted-foreground">{shift.employee.email}</p>}
+    </div>
+    
+    <div className="flex items-center gap-3 text-right">
+      <span className="inline-flex items-center rounded-md bg-secondary px-3 py-1 text-sm font-medium ring-1 ring-inset ring-secondary/50">
+        {new Date(shift.startTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}
+        {' - '}
+        {new Date(shift.endTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'})}
+      </span>
+
+      {/* MENU D'ACTIONS DU MANAGER */}
+      <DropdownMenu>
+        <DropdownMenuTrigger className="p-2 hover:bg-muted rounded-md transition-colors outline-none cursor-pointer">
+          <MoreHorizontal className="size-5 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem className="cursor-pointer">
+            <Edit className="mr-2 size-4" /> Modifier l'horaire
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer">
+            <UserPlus className="mr-2 size-4" /> Réassigner
+          </DropdownMenuItem>
+          
+          {/* Action de suppression directe */}
+          <form action={async () => {
+            "use server";
+            const { deleteShift } = await import('~/actions/schedule/delete-shift');
+            await deleteShift(organization.id, shift.id);
+          }}>
+            <button type="submit" className="w-full flex items-center text-left">
+              <DropdownMenuItem className="w-full cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-100 dark:focus:bg-red-900/30">
+                <Trash2 className="mr-2 size-4" /> Supprimer le shift
+              </DropdownMenuItem>
+            </button>
+          </form>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  </div>
+))}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">Personne n'est planifié aujourd'hui.</p>
