@@ -4,17 +4,20 @@ import { revalidatePath } from 'next/cache';
 
 export async function GET() {
   try {
-    // 1. On récupère toutes les organisations de ta base de données
-    const orgs = await prisma.organization.findMany({
-      include: { workHours: true }
-    });
+    // 1. On récupère juste les organisations (sans include)
+    const orgs = await prisma.organization.findMany();
 
     let fixedCount = 0;
     const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
     for (const org of orgs) {
-      // 2. Si l'organisation n'a aucun jour, on la répare
-      if (org.workHours.length === 0) {
+      // 2. On compte combien de jours cette orga possède
+      const hoursCount = await prisma.workHours.count({
+        where: { organizationId: org.id }
+      });
+
+      // 3. Si elle n'a aucun jour, on génère la semaine
+      if (hoursCount === 0) {
         await prisma.workHours.createMany({
           data: DAYS.map(day => ({
             organizationId: org.id,
@@ -25,7 +28,6 @@ export async function GET() {
       }
     }
 
-    // 3. LE PLUS IMPORTANT : On ordonne à Vercel de vider tout son cache !
     revalidatePath('/', 'layout');
 
     return NextResponse.json({ 
