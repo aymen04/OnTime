@@ -196,17 +196,21 @@ export function areWorkHoursValid(workHours: WorkHoursDto[]): boolean {
 function normalizedTimeSlot(timeSlot: WorkTimeSlotDto): WorkTimeSlotDto {
   const start = parseISO(timeSlot.start);
   const end = parseISO(timeSlot.end);
-  const baseDate = new Date(Date.UTC(1970, 0, 1));
+
+  // 1. Création propre en UTC pur (sans utiliser setHours/setMinutes qui utilisent l'heure locale)
+  const startDate = new Date(Date.UTC(1970, 0, 1, start.getUTCHours(), start.getUTCMinutes()));
+  let endDate = new Date(Date.UTC(1970, 0, 1, end.getUTCHours(), end.getUTCMinutes()));
+
+  // 2. CORRECTION : Si la fin est minuit (00:00) ou si l'heure de fin semble être avant le début,
+  // on bascule la date de fin au lendemain (2 Janvier 1970) pour que isAfter fonctionne toujours.
+  if ((end.getUTCHours() === 0 && end.getUTCMinutes() === 0) || endDate < startDate) {
+    endDate = new Date(Date.UTC(1970, 0, 2, end.getUTCHours(), end.getUTCMinutes()));
+  }
+
   return {
     id: timeSlot.id,
-    start: setMinutes(
-      setHours(baseDate, start.getUTCHours()),
-      start.getUTCMinutes()
-    ).toISOString(),
-    end: setMinutes(
-      setHours(baseDate, end.getUTCHours()),
-      end.getUTCMinutes()
-    ).toISOString()
+    start: startDate.toISOString(),
+    end: endDate.toISOString()
   };
 }
 

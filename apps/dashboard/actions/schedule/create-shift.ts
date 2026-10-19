@@ -12,63 +12,98 @@ export async function createShift(orgId: string, formData: FormData) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Non autorisé");
 
-    // 1. Extraction sécurisée des données du formulaire
     const employeeId = formData.get('employeeId') as string;
     const date = formData.get('date') as string;
     const startTime = formData.get('startTime') as string;
     const endTime = formData.get('endTime') as string;
 
-    // Sécurité : on vérifie que tout est bien rempli avant de continuer
     if (!employeeId || !date || !startTime || !endTime) {
-      throw new Error("Veuillez remplir tous les champs du formulaire.");
+      throw new Error("Veuillez remplir tous les champs.");
     }
 
     const shiftStart = new Date(`${date}T${startTime}:00`);
     let shiftEnd = new Date(`${date}T${endTime}:00`);
     
-    // Si l'heure de fin est avant l'heure de début (ex: 22h00 -> 02h00), c'est le lendemain
     if (shiftEnd < shiftStart) {
       shiftEnd.setDate(shiftEnd.getDate() + 1);
     }
 
-    // --- VÉRIFICATION DES DISPONIBILITÉS ---
     const dayOfWeek = JS_DAY_TO_PRISMA[getDay(shiftStart)];
     
-    // Conversion en minutes depuis minuit
     const [startH, startM] = startTime.split(':').map(Number);
     const requestedStartMins = startH * 60 + startM;
     
     let [endH, endM] = endTime.split(':').map(Number);
-    
-    // Si le shift se termine le lendemain, ou à 00:00, on considère que pour CE jour-là, la contrainte s'arrête à 1440 (minuit)
     const requestedEndMins = (shiftEnd > new Date(`${date}T23:59:59`)) 
       ? 1440 
       : (endH === 0 && endM === 0 ? 1440 : endH * 60 + endM);
 
-    // On cherche la disponibilité enregistrée en base
-    const availability = await prisma.availability.findFirst({
-      where: {
-        organizationId: orgId,
-        userId: employeeId,
-        dayOfWeek: dayOfWeek,
+
+    // --- 1. VÉRIFICATION DES HEURES D'OUVERTURE (BUSINESS HOURS) ---
+    const workHour = await prisma.workHours.findFirst({
+      where: { organizationId: orgId, dayOfWeek: dayOfWeek }
+    });
+
+    if (!workHour) {
+      throw new Error(`L'entreprise est fermée les ${dayOfWeek.toLowerCase()}s.`);
+    }
+
+    const businessSlots = await prisma.workTimeSlot.findMany({
+      where: { workHoursId: workHour.id }
+    });
+
+    if (businessSlots.length === 0) {
+      throw new Error(`L'entreprise est fermée les ${dayOfWeek.toLowerCase()}s.`);
+    }
+
+    let isWithinBusinessHours = false;
+    for (const slot of businessSlots) {
+      // Helper blindé : lit les données qu'elles soient en string ("09:00") ou en ISO Date ("1970-01-01T09:00:00Z")
+      const getMins = (val: any) => {
+        if (typeof val === 'string' && val.includes(':') && !val.includes('T')) {
+          const [h, m] = val.split(':').map(Number);
+          return h * 60 + m;
+        }
+        const d = new Date(val);
+        return d.getUTCHours() * 60 + d.getUTCMinutes();
+      };
+
+      // Supporte les clés 'start' (DTO) ou 'startTime' (Schema)
+      const slotStartMins = getMins((slot as any).start || (slot as any).startTime);
+      let slotEndMins = getMins((slot as any).end || (slot as any).endTime);
+      
+      if (slotEndMins === 0) slotEndMins = 1440;
+
+      if (requestedStartMins >= slotStartMins && requestedEndMins <= slotEndMins) {
+        isWithinBusinessHours = true;
+        break;
       }
+    }
+
+    if (!isWithinBusinessHours) {
+      throw new Error("⚠️ Le shift déborde des heures d'ouverture de l'entreprise.");
+    }
+
+
+    // --- 2. VÉRIFICATION DES DISPONIBILITÉS DE L'EMPLOYÉ ---
+    const availability = await prisma.availability.findFirst({
+      where: { organizationId: orgId, userId: employeeId, dayOfWeek: dayOfWeek }
     });
 
     if (!availability) {
       throw new Error(`L'employé n'est pas disponible les ${dayOfWeek.toLowerCase()}s.`);
     }
 
-    // Si le shift demandé déborde des horaires de disponibilité
     if (requestedStartMins < availability.startMinutes || requestedEndMins > availability.endMinutes) {
       const formatTime = (mins: number) => {
         if (mins === 1440) return '00:00';
         return `${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`;
       };
-      throw new Error(`Hors disponibilités. (Dispo ce jour-là : ${formatTime(availability.startMinutes)} à ${formatTime(availability.endMinutes)})`);
+      throw new Error(`Hors disponibilités employé. (Dispo : ${formatTime(availability.startMinutes)} à ${formatTime(availability.endMinutes)})`);
     }
-    // --- FIN DE LA VÉRIFICATION ---
 
-    // 4. Tout est vert, on crée le shift !
+
+    // --- 3. CRÉATION DU SHIFT ---
     await prisma.shift.create({
       data: {
         organizationId: orgId,
@@ -79,13 +114,11 @@ export async function createShift(orgId: string, formData: FormData) {
       }
     });
 
-    // 5. Mise à jour de l'interface
     const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { slug: true } });
     if (org) revalidatePath(`/organizations/${org.slug}/schedule`);
 
     return { success: true };
   } catch (error: any) {
-    // On renvoie l'erreur proprement au composant Client pour qu'il l'affiche en rouge
     return { success: false, error: error.message || "Erreur lors de la création du shift" };
   }
 }
