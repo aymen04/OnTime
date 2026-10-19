@@ -5,7 +5,6 @@ import { auth } from '@workspace/auth';
 import { prisma } from '@workspace/database/client';
 import { revalidatePath } from 'next/cache';
 
-// Le schéma attend un tableau d'objets contenant le jour et les minutes
 const availabilitySchema = z.array(z.object({
   dayOfWeek: z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']),
   startMinutes: z.number().min(0).max(1440),
@@ -14,23 +13,29 @@ const availabilitySchema = z.array(z.object({
   message: "L'heure de fin doit être après l'heure de début",
 });
 
-export async function updateAvailabilities(orgId: string, rawData: any) {
+export async function updateAvailabilities(slug: string, rawData: any) {
   try {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Non autorisé");
     const userId = session.user.id;
 
-    // Validation des données
+    // 1. On récupère l'organisation via le slug
+    const org = await prisma.organization.findUnique({
+      where: { slug }
+    });
+
+    if (!org) throw new Error("Organisation introuvable");
+
     const validatedData = availabilitySchema.parse(rawData);
 
-    // Transaction Prisma : On supprime les anciennes et on insère les nouvelles d'un coup
+    // 2. On utilise le vrai org.id pour la transaction
     await prisma.$transaction([
       prisma.availability.deleteMany({
-        where: { organizationId: orgId, userId: userId }
+        where: { organizationId: org.id, userId: userId }
       }),
       prisma.availability.createMany({
         data: validatedData.map(avail => ({
-          organizationId: orgId,
+          organizationId: org.id,
           userId: userId,
           dayOfWeek: avail.dayOfWeek,
           startMinutes: avail.startMinutes,
@@ -39,15 +44,7 @@ export async function updateAvailabilities(orgId: string, rawData: any) {
       })
     ]);
 
-    // Purge du cache
-    const org = await prisma.organization.findUnique({
-      where: { id: orgId },
-      select: { slug: true }
-    });
-
-    if (org) {
-      revalidatePath(`/organizations/${org.slug}/availabilities`);
-    }
+    revalidatePath(`/organizations/${slug}/availabilities`);
 
     return { success: true };
   } catch (error: any) {

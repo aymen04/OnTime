@@ -29,7 +29,7 @@ const DAYS = [
   { id: 'SUNDAY', label: 'Dimanche' },
 ];
 
-export default function AvailabilitiesPage({ params }: { params: { slug: string, orgId: string } }) {
+export default function AvailabilitiesPage({ params }: { params: { slug: string } }) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -61,8 +61,7 @@ export default function AvailabilitiesPage({ params }: { params: { slug: string,
 
     startTransition(async () => {
       // NOTE: En production, passe le vrai orgId via les props du Server Component parent
-      const result = await updateAvailabilities(params.orgId || "ID_A_REMPLACER", payload);
-      
+      const result = await updateAvailabilities(params.slug, payload);      
       if (result.success) {
         setMessage({ type: 'success', text: 'Vos disponibilités ont été mises à jour.' });
       } else {
