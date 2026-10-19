@@ -75,7 +75,7 @@ export function CreateShiftForm({ orgId, employees }: { orgId: string, employees
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         
         <div className="space-y-2">
-          <label className="text-sm font-medium">Employés</label>
+          <label className="text-sm font-medium">Employé</label>
           <div className="relative">
             <UserIcon className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
             <select 
