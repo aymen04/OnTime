@@ -81,7 +81,7 @@ export async function createShift(orgId: string, formData: FormData) {
     }
 
     if (!isWithinBusinessHours) {
-      throw new Error("⚠️ Le shift déborde des heures d'ouverture de l'entreprise.");
+      throw new Error(" Le shift déborde des heures d'ouverture de l'entreprise.");
     }
 
 
