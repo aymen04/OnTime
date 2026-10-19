@@ -1,88 +1,91 @@
 'use server';
 
-import { z } from 'zod';
 import { auth } from '@workspace/auth';
 import { prisma } from '@workspace/database/client';
-import { getCurrentWorkRole } from '@workspace/auth/work-role';
 import { revalidatePath } from 'next/cache';
-import { fromZonedTime } from 'date-fns-tz'; // NOUVEL IMPORT
+import { getDay } from 'date-fns';
 
-// Mise à jour du schéma pour inclure la timezone
-const createShiftSchema = z.object({
-  employeeId: z.string().min(1, "L'employé est requis"),
-  startTime: z.string().min(1, "L'heure de début est requise"),
-  endTime: z.string().min(1, "L'heure de fin est requise"),
-  timezone: z.string().default('America/Toronto'), // Fallback de sécurité
-}).refine((data) => new Date(data.startTime) < new Date(data.endTime), {
-  message: "L'heure de fin doit être après l'heure de début",
-  path: ["endTime"],
-});
+const JS_DAY_TO_PRISMA = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const;
 
 export async function createShift(orgId: string, formData: FormData) {
   try {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Non autorisé");
 
-    const role = await getCurrentWorkRole(orgId, session.user.id);
-    if (role?.name !== 'manager') {
-      throw new Error("Seul un manager peut créer des shifts");
+    // 1. Extraction sécurisée des données du formulaire
+    const employeeId = formData.get('employeeId') as string;
+    const date = formData.get('date') as string;
+    const startTime = formData.get('startTime') as string;
+    const endTime = formData.get('endTime') as string;
+
+    // Sécurité : on vérifie que tout est bien rempli avant de continuer
+    if (!employeeId || !date || !startTime || !endTime) {
+      throw new Error("Veuillez remplir tous les champs du formulaire.");
     }
 
-    // Récupération des données y compris le champ caché
-    const data = {
-      employeeId: formData.get('employeeId') as string,
-      startTime: formData.get('startTime') as string,
-      endTime: formData.get('endTime') as string,
-      timezone: formData.get('timezone') as string,
-    };
+    const shiftStart = new Date(`${date}T${startTime}:00`);
+    let shiftEnd = new Date(`${date}T${endTime}:00`);
+    
+    // Si l'heure de fin est avant l'heure de début (ex: 22h00 -> 02h00), c'est le lendemain
+    if (shiftEnd < shiftStart) {
+      shiftEnd.setDate(shiftEnd.getDate() + 1);
+    }
 
-    const validatedData = createShiftSchema.parse(data);
+    // --- VÉRIFICATION DES DISPONIBILITÉS ---
+    const dayOfWeek = JS_DAY_TO_PRISMA[getDay(shiftStart)];
+    
+    // Conversion en minutes depuis minuit
+    const [startH, startM] = startTime.split(':').map(Number);
+    const requestedStartMins = startH * 60 + startM;
+    
+    let [endH, endM] = endTime.split(':').map(Number);
+    
+    // Si le shift se termine le lendemain, ou à 00:00, on considère que pour CE jour-là, la contrainte s'arrête à 1440 (minuit)
+    const requestedEndMins = (shiftEnd > new Date(`${date}T23:59:59`)) 
+      ? 1440 
+      : (endH === 0 && endM === 0 ? 1440 : endH * 60 + endM);
 
-    // LA MAGIE OPÈRE ICI : Conversion de l'heure locale en vraie Date pour la BDD
-    const shiftStart = fromZonedTime(validatedData.startTime, validatedData.timezone);
-    const shiftEnd = fromZonedTime(validatedData.endTime, validatedData.timezone);
-
-    // Vérification des congés
-    const conflictingTimeOff = await prisma.timeOffRequest.findFirst({
+    // On cherche la disponibilité enregistrée en base
+    const availability = await prisma.availability.findFirst({
       where: {
         organizationId: orgId,
-        employeeId: validatedData.employeeId,
-        status: 'approved',
-        startDate: { lte: shiftEnd },
-        endDate: { gte: shiftStart },
+        userId: employeeId,
+        dayOfWeek: dayOfWeek,
       }
     });
 
-    if (conflictingTimeOff) {
-      throw new Error("Impossible : L'employé a un congé approuvé sur cette période.");
+    if (!availability) {
+      throw new Error(`L'employé n'est pas disponible les ${dayOfWeek.toLowerCase()}s.`);
     }
 
-    // Création du shift
+    // Si le shift demandé déborde des horaires de disponibilité
+    if (requestedStartMins < availability.startMinutes || requestedEndMins > availability.endMinutes) {
+      const formatTime = (mins: number) => {
+        if (mins === 1440) return '00:00';
+        return `${Math.floor(mins / 60).toString().padStart(2, '0')}:${(mins % 60).toString().padStart(2, '0')}`;
+      };
+      throw new Error(`Hors disponibilités. (Dispo ce jour-là : ${formatTime(availability.startMinutes)} à ${formatTime(availability.endMinutes)})`);
+    }
+    // --- FIN DE LA VÉRIFICATION ---
+
+    // 4. Tout est vert, on crée le shift !
     await prisma.shift.create({
       data: {
         organizationId: orgId,
-        employeeId: validatedData.employeeId,
+        employeeId: employeeId,
         startTime: shiftStart,
         endTime: shiftEnd,
-      },
+        createdById: session.user.id,
+      }
     });
 
-    // Purge du cache
-    const org = await prisma.organization.findUnique({
-      where: { id: orgId },
-      select: { slug: true }
-    });
-
-    if (org) {
-      revalidatePath(`/organizations/${org.slug}/home`);
-      revalidatePath(`/organizations/${org.slug}/schedule`);
-    }
+    // 5. Mise à jour de l'interface
+    const org = await prisma.organization.findUnique({ where: { id: orgId }, select: { slug: true } });
+    if (org) revalidatePath(`/organizations/${org.slug}/schedule`);
 
     return { success: true };
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
-    }
-    return { success: false, error: error.message || "Une erreur est survenue lors de la création du shift" };
+    // On renvoie l'erreur proprement au composant Client pour qu'il l'affiche en rouge
+    return { success: false, error: error.message || "Erreur lors de la création du shift" };
   }
 }

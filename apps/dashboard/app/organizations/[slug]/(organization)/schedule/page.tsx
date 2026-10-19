@@ -30,7 +30,7 @@ export default async function SchedulePage(props: {
     where: { slug: params.slug },
     select: { 
       id: true, 
-      memberships: { select: { user: { select: { id: true, name: true, email: true } } } } 
+      memberships: { select: { user: { select: { id: true, name: true, email: true, availabilities: true  } } } } 
     }
   });
 

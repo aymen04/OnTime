@@ -95,6 +95,9 @@ importers:
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      bcryptjs:
+        specifier: 3.0.2
+        version: 3.0.2
       date-fns:
         specifier: 4.1.0
         version: 4.1.0
@@ -174,6 +177,9 @@ importers:
       '@next/bundle-analyzer':
         specifier: 15.3.3
         version: 15.3.3
+      '@types/bcryptjs':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@types/file-saver':
         specifier: 2.0.7
         version: 2.0.7
@@ -643,10 +649,16 @@ importers:
       '@t3-oss/env-nextjs':
         specifier: 0.13.6
         version: 0.13.6(typescript@5.8.3)(zod@3.25.56)
+      bcryptjs:
+        specifier: 3.0.2
+        version: 3.0.2
       zod:
         specifier: 3.25.56
         version: 3.25.56
     devDependencies:
+      '@types/bcryptjs':
+        specifier: ^3.0.0
+        version: 3.0.0
       '@types/node':
         specifier: 22.15.30
         version: 22.15.30
@@ -4053,6 +4065,10 @@ packages:
   '@turbo/workspaces@2.5.4':
     resolution: {integrity: sha512-LLmImNOyDOZ8XNsNolefa7wQdrzAss0CoedPADCZFB+iIDXW+8w4YkgOvKaLKBLcm9kb7gWCP4L0o0EiZLXBUA==}
     hasBin: true
+
+  '@types/bcryptjs@3.0.0':
+    resolution: {integrity: sha512-WRZOuCuaz8UcZZE4R5HXTco2goQSI2XxjGY3hbM/xDvwmqFWd4ivooImsMx65OKM6CtNKbnZ5YL+YwAwK7c1dg==}
+    deprecated: This is a stub types definition. bcryptjs provides its own type definitions, so you do not need this installed.
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
@@ -12608,6 +12624,10 @@ snapshots:
       update-check: 1.5.4
     transitivePeerDependencies:
       - '@types/node'
+
+  '@types/bcryptjs@3.0.0':
+    dependencies:
+      bcryptjs: 3.0.2
 
   '@types/connect@3.4.38':
     dependencies:
