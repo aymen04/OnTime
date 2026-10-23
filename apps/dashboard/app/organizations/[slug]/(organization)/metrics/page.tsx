@@ -3,13 +3,15 @@ import { prisma } from '@workspace/database/client';
 import { redirect } from 'next/navigation';
 import { 
   TrendingUpIcon, 
-  ClockIcon,  // Si BanknotesIcon n'existe pas dans lucide-react, utilise DollarSignIcon ou WalletIcon
+  ClockIcon, 
   WalletIcon,
   CalendarOffIcon,
   BriefcaseIcon
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
+// Import du composant interactif
+import { TimesheetTable } from './_components/timesheet-table';
 
 export default async function BusinessMetricsPage({
   params
@@ -78,7 +80,7 @@ export default async function BusinessMetricsPage({
 
   const totalHours = Math.round(totalMinutes / 60);
   
-  // Taux horaire moyen fictif (ex: 22$/h). À lier à ton modèle Employee/Role plus tard.
+  // Taux horaire moyen fictif
   const averageHourlyRate = 22; 
   const estimatedLaborCost = totalHours * averageHourlyRate;
   const avgHoursPerEmployee = activeEmployees > 0 ? Math.round(totalHours / activeEmployees) : 0;
@@ -121,7 +123,7 @@ export default async function BusinessMetricsPage({
           </CardContent>
         </Card>
 
-        {/* KPI 3 : Moyenne par employé (Risque heures sup) */}
+        {/* KPI 3 : Moyenne par employé */}
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Moyenne / Employé</CardTitle>
@@ -144,7 +146,7 @@ export default async function BusinessMetricsPage({
           <CardContent>
             <div className="text-2xl font-bold">{approvedTimeOff}</div>
             <p className="text-xs text-muted-foreground">
-              Demandes validées ce mois
+              Demandes validées ce mois-ci
             </p>
           </CardContent>
         </Card>
@@ -152,33 +154,21 @@ export default async function BusinessMetricsPage({
 
       {/* Section Détails Business */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
-        {/* Graphique / Tendance d'utilisation du budget */}
-        <Card className="col-span-4 min-h-[350px] border border-border/50">
+        {/* Graphique d'évolution */}
+        <Card className="col-span-3 min-h-[350px] border border-border/50">
           <CardHeader>
-            <CardTitle>Évolution des coûts de main d'œuvre</CardTitle>
+            <CardTitle>Évolution des coûts</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
             <TrendingUpIcon className="size-12 mb-4 opacity-20" />
-            <p className="text-sm">Le composant graphique (ex: Recharts) sera intégré ici</p>
+            <p className="text-sm">Graphique Recharts (À venir)</p>
           </CardContent>
         </Card>
 
-        {/* Top employés par heures (Identifier les risques d'heures supplémentaires) */}
-        <Card className="col-span-3 min-h-[350px] border border-border/50">
-          <CardHeader>
-            <CardTitle>Employés les plus sollicités</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 text-sm">
-              <p className="text-muted-foreground">Liste des employés approchant le seuil d'heures supplémentaires pour optimiser la planification.</p>
-              {/* Ici, tu pourras mapper un tableau trié des employés par heures travaillées */}
-              <div className="flex items-center justify-between border-b pb-2">
-                <span className="font-medium">Top planifiés à venir...</span>
-                <span className="text-muted-foreground">-- h</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Tableau interactif avec export CSV */}
+        <div className="col-span-4">
+          <TimesheetTable orgId={org.id} />
+        </div>
       </div>
     </div>
   );
