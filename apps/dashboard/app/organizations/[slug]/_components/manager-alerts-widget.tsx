@@ -7,7 +7,6 @@ export async function ManagerAlertsWidget({ orgId, slug }: { orgId: string, slug
 
   const hasAlerts = alerts.pendingTimeOffs > 0 || alerts.missingClockOuts > 0;
 
-  // S'il n'y a aucune alerte, le widget est totalement invisible
   if (!hasAlerts) return null; 
 
   return (
@@ -19,7 +18,7 @@ export async function ManagerAlertsWidget({ orgId, slug }: { orgId: string, slug
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {alerts.pendingTimeOffs > 0 && (
-          <Link href={`/organizations/${slug}/schedule`} className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm hover:border-orange-300 transition-colors group">
+          <Link href={`/organizations/${slug}/requests`} className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm hover:border-orange-300 transition-colors group">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-100 dark:bg-orange-900/40 rounded-md text-orange-600 dark:text-orange-400">
                 <CalendarClockIcon className="size-4" />
@@ -34,7 +33,7 @@ export async function ManagerAlertsWidget({ orgId, slug }: { orgId: string, slug
         )}
 
         {alerts.missingClockOuts > 0 && (
-          <Link href={`/organizations/${slug}/schedule`} className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm hover:border-red-300 transition-colors group">
+          <Link href={`/organizations/${slug}/time-entries`} className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm hover:border-red-300 transition-colors group">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-md text-red-600 dark:text-red-400">
                 <AlertCircleIcon className="size-4" />

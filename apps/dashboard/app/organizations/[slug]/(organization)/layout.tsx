@@ -2,6 +2,7 @@ import * as React from 'react';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { prisma } from '@workspace/database/client';
 
 import { getAuthOrganizationContext } from '@workspace/auth/context';
 import { billingConfig } from '@workspace/billing/config';
@@ -29,6 +30,25 @@ export default async function OrganizationLayout(
   props: NextPageProps & React.PropsWithChildren
 ): Promise<React.JSX.Element> {
   const ctx = await getAuthOrganizationContext();
+
+  let userRole = 'employee';
+  
+  try {
+    const membership = await prisma.membership.findFirst({
+      where: {
+        organizationId: ctx.organization.id,
+        // Selon comment est fait ton contexte, l'ID utilisateur est souvent ici :
+        userId: ctx.session?.user?.id || (ctx as any).user?.id 
+      },
+      include: { workRole: true }
+    });
+    
+    if (membership?.workRole?.name) {
+      userRole = membership.workRole.name;
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération du rôle:", error);
+  }
 
   const { hasPurchasedProduct } = createPurchasesHelper(ctx.organization);
   if (!freeProductExists && !hasPurchasedProduct()) {
@@ -58,6 +78,7 @@ export default async function OrganizationLayout(
           organizations={organizations}
           favorites={favorites}
           profile={profile}
+          userRole={userRole}
         />
         {/* Set max-width so full-width tables can overflow horizontally correctly */}
         <SidebarInset

@@ -24,12 +24,14 @@ export type AppSidebarProps = {
   organizations: OrganizationDto[];
   favorites: FavoriteDto[];
   profile: ProfileDto;
+  userRole?: string; // 1. ON AJOUTE LE RÔLE ICI
 };
 
 export function AppSidebar({
   organizations,
   favorites,
-  profile
+  profile,
+  userRole // 2. ON LE RÉCUPÈRE ICI
 }: AppSidebarProps): React.JSX.Element {
   return (
     <Sidebar collapsible="icon">
@@ -39,10 +41,10 @@ export function AppSidebar({
       <SidebarContent className="overflow-hidden">
         <ScrollArea
           verticalScrollBar
-          /* Overriding the hardcoded { disply:table } to get full flex height */
           className="h-full [&>[data-radix-scroll-area-viewport]>div]:flex! [&>[data-radix-scroll-area-viewport]>div]:h-full [&>[data-radix-scroll-area-viewport]>div]:flex-col"
         >
-          <NavMain />
+          {/* 3. ON DONNE LE RÔLE À NAVMAIN */}
+          <NavMain userRole={userRole} />
           <NavFavorites favorites={favorites} />
           <NavSupport
             profile={profile}

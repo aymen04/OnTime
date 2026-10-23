@@ -9,10 +9,45 @@ import { authOrganizationActionClient } from '~/actions/safe-action';
 import { Caching, OrganizationCacheKey, UserCacheKey } from '~/data/caching';
 import { updateOrganizationDetailsSchema } from '~/schemas/organization/update-organization-details-schema';
 
+// --- FONCTION GRATUITE DE GÉOCODAGE (OpenStreetMap) ---
+async function getCoordinates(address: string) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`, {
+      headers: {
+        'User-Agent': 'OnTime-SaaS-App' // Requis par Nominatim
+      }
+    });
+    const data = await res.json();
+    if (data && data.length > 0) {
+      return { 
+        lat: parseFloat(data[0].lat), 
+        lng: parseFloat(data[0].lon) 
+      };
+    }
+  } catch (error) {
+    console.error("Erreur de géocodage:", error);
+  }
+  return null;
+}
+
 export const updateOrganizationDetails = authOrganizationActionClient
   .metadata({ actionName: 'updateOrganizationDetails' })
   .inputSchema(updateOrganizationDetailsSchema)
   .action(async ({ parsedInput, ctx }) => {
+    
+    // 1. Calcul des coordonnées GPS si une adresse est fournie
+    let latitude = null;
+    let longitude = null;
+    
+    if (parsedInput.address) {
+      const coords = await getCoordinates(parsedInput.address);
+      if (coords) {
+        latitude = coords.lat;
+        longitude = coords.lng;
+      }
+    }
+
+    // 2. Sauvegarde de l'organisation avec ses coordonnées
     await prisma.organization.update({
       where: { id: ctx.organization.id },
       data: {
@@ -20,7 +55,9 @@ export const updateOrganizationDetails = authOrganizationActionClient
         address: parsedInput.address,
         phone: parsedInput.phone,
         email: parsedInput.email,
-        website: parsedInput.website
+        website: parsedInput.website,
+        latitude: latitude,    // <-- AJOUT GPS
+        longitude: longitude,  // <-- AJOUT GPS
       },
       select: {
         id: true // SELECT NONE

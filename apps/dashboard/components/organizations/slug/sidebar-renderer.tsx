@@ -21,6 +21,7 @@ export type SidebarRendererProps = {
   organizations: OrganizationDto[];
   favorites: FavoriteDto[];
   profile: ProfileDto;
+  userRole?: string; // 1. ON AUTORISE LE RÔLE ICI
 };
 
 export function SidebarRenderer(
@@ -37,5 +38,6 @@ export function SidebarRenderer(
     return <SettingsSidebar />;
   }
 
+  // 2. Le rôle est transmis tout seul grâce au {...props} !
   return <AppSidebar {...props} />;
 }

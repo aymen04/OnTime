@@ -9,7 +9,9 @@ import {
   UserPlus2Icon,
   CalendarIcon,
   ArrowRightLeftIcon,
-  ClockIcon // Ajout de l'icône pour les disponibilités
+  ClockIcon,
+  InboxIcon,
+  TrendingUpIcon // <-- Ajout de l'icône ici
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -24,30 +26,52 @@ type NavItem = {
 };
 
 // 1. MENU PRINCIPAL (La barre latérale)
-export function createMainNavItems(slug: string): NavItem[] {
-  return [
+// On ajoute "role" comme paramètre (optionnel pour ne pas casser tes autres composants)
+export function createMainNavItems(slug: string, role?: string | null): NavItem[] {
+  // Les liens de base que tout le monde voit
+  const links: NavItem[] = [
     {
       title: 'Tableau de bord',
       href: replaceOrgSlug(routes.dashboard.organizations.slug.Home, slug),
       icon: HomeIcon
     },
     {
-      title: 'Planificateur',
-      href: `/organizations/${slug}/schedule`,
-      icon: CalendarIcon,
-    },
-    {
       title: 'Échanges de shifts',
       href: `/organizations/${slug}/swaps`,
       icon: ArrowRightLeftIcon,
     },
-    // NOUVEAU LIEN : Mes disponibilités
     {
       title: 'Mes disponibilités',
       href: `/organizations/${slug}/availabilities`,
       icon: ClockIcon,
     }
   ];
+
+  // Les liens réservés aux managers
+  if (role === 'manager') {
+    // On ajoute le Planificateur en 2ème position
+    links.splice(1, 0, {
+      title: 'Planificateur',
+      href: `/organizations/${slug}/schedule`,
+      icon: CalendarIcon,
+    });
+    
+    // NOUVEAU LIEN : Suivi Business (uniquement pour le manager)
+    links.push({
+      title: 'Suivi Business',
+      href: `/organizations/${slug}/metrics`,
+      icon: TrendingUpIcon,
+    });
+    
+    // On ajoute les Demandes à la fin
+    links.push({
+      title: 'Demandes',
+      href: `/organizations/${slug}/requests`,
+      icon: InboxIcon,
+    });
+  }
+
+  return links;
 }
 
 // 2. MENU COMPTE UTILISATEUR (Paramètres persos)

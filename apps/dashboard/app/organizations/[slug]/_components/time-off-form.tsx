@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+// 1. ON IMPORTE USEPARAMS ICI 👇
+import { useParams } from 'next/navigation';
+
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { CalendarPlusIcon } from 'lucide-react';
-// Imports de la modale (Dialog) standard de Shadcn
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@workspace/ui/components/dialog';
 import { submitTimeOffRequest } from '../../../../actions/time-off/time-off-actions';
 
@@ -12,6 +14,10 @@ export function TimeOffForm({ orgId }: { orgId: string }) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  
+  // 2. ON RÉCUPÈRE LE SLUG DE L'URL 👇
+  const params = useParams();
+  const slug = params.slug as string;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,10 +27,10 @@ export function TimeOffForm({ orgId }: { orgId: string }) {
     const reason = formData.get('reason') as string;
 
     startTransition(async () => {
-      const result = await submitTimeOffRequest(orgId, startDate, endDate, reason);
+      // 3. ON RAJOUTE LE SLUG EN DEUXIÈME POSITION ICI 👇
+      const result = await submitTimeOffRequest(orgId, slug, startDate, endDate, reason);
       if (result && result.success) {
         setMessage({ text: "Demande envoyée avec succès !", type: 'success' });
-        // On ferme la modale après 2 secondes
         setTimeout(() => {
           setIsOpen(false);
           setMessage(null);

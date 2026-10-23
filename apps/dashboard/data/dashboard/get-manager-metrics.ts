@@ -45,6 +45,7 @@ export async function getManagerMetrics(orgId: string) {
 
   let totalTeamHours = 0;
   weeklyShifts.forEach(s => {
+    // Correction du calcul en heures
     totalTeamHours += (new Date(s.endTime).getTime() - new Date(s.startTime).getTime()) / (1000 * 60 * 60);
   });
 

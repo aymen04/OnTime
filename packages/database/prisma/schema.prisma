@@ -401,6 +401,8 @@ model Organization {
   webhooks          Webhook[]
   latitude          Float?
   longitude         Float?
+  allowedRadius     Int                @default(50)
+  timezone        String?  @default("America/Toronto")
   workRoles         WorkRole[]
   availabilities    Availability[]
   shifts            Shift[]
@@ -563,8 +565,10 @@ model WorkHours {
 model WorkTimeSlot {
   id          String    @id(map: "PK_WorkTimeSlot") @default(uuid()) @db.Uuid
   workHoursId String    @db.Uuid
-  start       DateTime  @db.Time(0)
-  end         DateTime  @db.Time(0)
+  
+  start       DateTime  @db.Time(0) // <-- RETOUR AU DATETIME
+  end         DateTime  @db.Time(0) // <-- RETOUR AU DATETIME
+  
   workHours   WorkHours @relation(fields: [workHoursId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([workHoursId], map: "IX_WorkTimeSlot_workHoursId")

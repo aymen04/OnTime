@@ -5,7 +5,7 @@ import { prisma } from '@workspace/database/client';
 import { revalidatePath } from 'next/cache';
 
 // 1. Action pour l'employé : Demander un congé
-export async function submitTimeOffRequest(orgId: string, startDate: Date, endDate: Date, reason: string) {
+export async function submitTimeOffRequest(orgId: string, slug: string, startDate: Date, endDate: Date, reason: string) {
   try {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Non autorisé");
@@ -21,31 +21,49 @@ export async function submitTimeOffRequest(orgId: string, startDate: Date, endDa
         startDate: startDate,
         endDate: endDate,
         reason: reason,
-        status: 'pending', // En attente par défaut
+        status: 'pending',
       }
     });
 
-    revalidatePath(`/organizations/${orgId}`);
+    revalidatePath(`/organizations/${slug}/requests`);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
 
-// 2. Action pour le manager : Approuver ou refuser
-export async function updateTimeOffStatus(orgId: string, requestId: string, status: 'approved' | 'rejected') {
+// 2. Action pour le manager : Approuver ou refuser un congé
+export async function updateTimeOffStatus(slug: string, requestId: string, status: 'approved' | 'rejected') {
   try {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Non autorisé");
-
-    // Ici on pourrait rajouter une vérification pour s'assurer que l'utilisateur est bien manager
     
     await prisma.timeOffRequest.update({
       where: { id: requestId },
       data: { status: status }
     });
 
-    revalidatePath(`/organizations/${orgId}/schedule`);
+    revalidatePath(`/organizations/${slug}/requests`);
+    revalidatePath(`/organizations/${slug}/schedule`);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+// 3. Action pour le manager : Approuver ou refuser un échange de shift
+export async function updateSwapStatus(slug: string, swapId: string, status: 'APPROVED' | 'REJECTED') {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Non autorisé");
+
+    await prisma.shiftSwapRequest.update({
+      where: { id: swapId },
+      data: { status }
+    });
+    
+    revalidatePath(`/organizations/${slug}/requests`);
+    revalidatePath(`/organizations/${slug}/schedule`);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
