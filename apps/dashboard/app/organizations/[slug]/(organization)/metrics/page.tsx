@@ -144,7 +144,7 @@ export default async function BusinessMetricsPage({
           <CardContent>
             <div className="text-2xl font-bold">{approvedTimeOff}</div>
             <p className="text-xs text-muted-foreground">
-              Demandes validées ce mois-ci
+              Demandes validées ce mois
             </p>
           </CardContent>
         </Card>
