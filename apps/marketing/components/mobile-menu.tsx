@@ -19,8 +19,11 @@ import { ThemeSwitcher } from '@workspace/ui/components/theme-switcher';
 import { RemoveScroll } from '@workspace/ui/lib/remove-scroll';
 import { cn } from '@workspace/ui/lib/utils';
 
-import { ExternalLink } from '~/components/fragments/external-link';
-import { DOCS_LINKS, MENU_LINKS } from '~/components/marketing-links';
+import { LanguageSwitcher } from '~/components/language-switcher';
+import { DOCS_LINKS } from '~/components/marketing-links';
+import { getChromeDictionary } from '~/lib/i18n/chrome';
+import { getHomePath } from '~/lib/i18n/config';
+import { useLocale } from '~/lib/i18n/use-locale';
 
 export function MobileMenu({
   className,
@@ -28,6 +31,8 @@ export function MobileMenu({
 }: React.HTMLAttributes<HTMLDivElement>): React.JSX.Element {
   const [open, setOpen] = React.useState<boolean>(false);
   const pathname = usePathname();
+  const locale = useLocale();
+  const t = getChromeDictionary(locale);
   const isDocs = pathname.startsWith(
     getPathname(routes.marketing.Docs, baseUrl.Marketing)
   );
@@ -66,14 +71,14 @@ export function MobileMenu({
         className={cn('flex items-center justify-between', className)}
         {...other}
       >
-        <Link href={routes.marketing.Index}>
+        <Link href={getHomePath(locale)}>
           <Logo />
         </Link>
         <Button
           variant="ghost"
           size="icon"
           aria-expanded={open}
-          aria-label="Toggle Mobile Menu"
+          aria-label={t.nav.toggleMenu}
           onClick={handleToggleMobileMenu}
           className="flex aspect-square h-fit select-none flex-col items-center justify-center rounded-full"
         >
@@ -120,7 +125,8 @@ type MainMobileMenuProps = {
 function MainMobileMenu({
   onLinkClicked
 }: MainMobileMenuProps): React.JSX.Element {
-  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+  const locale = useLocale();
+  const t = getChromeDictionary(locale);
   return (
     <div className="fixed inset-0 z-50 mt-[69px] overflow-y-auto bg-background animate-in fade-in-0">
       <div className="flex size-full flex-col items-start space-y-3 p-4">
@@ -132,11 +138,11 @@ function MainMobileMenu({
                 variant: 'default',
                 size: 'lg'
               }),
-              'w-full rounded-xl'
+              'w-full rounded-xl bg-brand font-semibold text-brand-foreground hover:bg-brand/90'
             )}
             onClick={onLinkClicked}
           >
-            Start for free
+            {t.nav.cta}
           </Link>
           <Link
             href={routes.dashboard.auth.SignIn}
@@ -149,100 +155,34 @@ function MainMobileMenu({
               'w-full rounded-xl'
             )}
           >
-            Sign in
+            {t.nav.signIn}
           </Link>
         </div>
         <ul className="w-full">
-          {MENU_LINKS.map((item) => (
+          {t.nav.links.map((link) => (
             <li
-              key={item.title}
-              className="py-2"
+              key={link.anchor}
+              className="py-1"
             >
-              {item.items ? (
-                <Collapsible
-                  open={expanded[item.title.toLowerCase()]}
-                  onOpenChange={(isOpen) =>
-                    setExpanded((prev) => ({
-                      ...prev,
-                      [item.title.toLowerCase()]: isOpen
-                    }))
-                  }
-                >
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="flex h-9 w-full items-center justify-between px-4 text-left"
-                    >
-                      <span className="text-base font-medium">
-                        {item.title}
-                      </span>
-                      {expanded[item.title.toLowerCase()] ? (
-                        <ChevronUpIcon className="size-4" />
-                      ) : (
-                        <ChevronDownIcon className="size-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <ul className="mt-2 pl-4">
-                      {item.items.map((subItem) => (
-                        <li key={subItem.title}>
-                          <Link
-                            href={subItem.href}
-                            target={subItem.external ? '_blank' : undefined}
-                            rel={
-                              subItem.external
-                                ? 'noopener noreferrer'
-                                : undefined
-                            }
-                            className={cn(
-                              buttonVariants({ variant: 'ghost' }),
-                              'm-0 h-auto w-full justify-start gap-4 p-1.5'
-                            )}
-                            onClick={onLinkClicked}
-                          >
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background text-muted-foreground transition-colors group-hover:text-foreground">
-                              {subItem.icon}
-                            </div>
-                            <div>
-                              <span className="text-sm font-medium">
-                                {subItem.title}
-                                {subItem.external && (
-                                  <ExternalLink className="-mt-2 ml-1 inline size-2 text-muted-foreground" />
-                                )}
-                              </span>
-                              {subItem.description && (
-                                <p className="text-xs text-muted-foreground">
-                                  {subItem.description}
-                                </p>
-                              )}
-                            </div>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </CollapsibleContent>
-                </Collapsible>
-              ) : (
-                <Link
-                  href={item.href}
-                  target={item.external ? '_blank' : undefined}
-                  rel={item.external ? 'noopener noreferrer' : undefined}
-                  className={cn(
-                    buttonVariants({ variant: 'ghost' }),
-                    'w-full justify-start'
-                  )}
-                  onClick={onLinkClicked}
-                >
-                  <span className="text-base">{item.title}</span>
-                </Link>
-              )}
+              <Link
+                href={getHomePath(locale, link.anchor)}
+                className={cn(
+                  buttonVariants({ variant: 'ghost' }),
+                  'w-full justify-start'
+                )}
+                onClick={onLinkClicked}
+              >
+                <span className="text-base">{link.label}</span>
+              </Link>
             </li>
           ))}
         </ul>
         <div className="flex w-full items-center justify-between gap-2 border-y border-border/40 p-4">
-          <div className="text-base font-medium">Theme</div>
+          <div className="text-base font-medium">{t.language.label}</div>
+          <LanguageSwitcher />
+        </div>
+        <div className="flex w-full items-center justify-between gap-2 border-b border-border/40 p-4">
+          <div className="text-base font-medium">{t.theme}</div>
           <ThemeSwitcher />
         </div>
       </div>

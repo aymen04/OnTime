@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { MotionConfig } from 'motion/react';
 
 import { AnalyticsProvider } from '@workspace/analytics/hooks/use-analytics';
 import { TooltipProvider } from '@workspace/ui/components/tooltip';
@@ -17,7 +18,9 @@ export function Providers({
         enableSystem
         disableTransitionOnChange
       >
-        <TooltipProvider>{children}</TooltipProvider>
+        <MotionConfig reducedMotion="user">
+          <TooltipProvider>{children}</TooltipProvider>
+        </MotionConfig>
       </ThemeProvider>
     </AnalyticsProvider>
   );

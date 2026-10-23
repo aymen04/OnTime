@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "marketing",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "marketing", "dev"],
+      "port": 3105,
+      "autoPort": false
+    }
+  ]
+}

@@ -2,162 +2,63 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
-import { baseUrl, getPathname, routes } from '@workspace/routes';
+import { routes } from '@workspace/routes';
 import { buttonVariants } from '@workspace/ui/components/button';
 import { Logo } from '@workspace/ui/components/logo';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle
-} from '@workspace/ui/components/navigation-menu';
 import { ThemeToggle } from '@workspace/ui/components/theme-toggle';
 import { cn } from '@workspace/ui/lib/utils';
 
-import { ExternalLink } from '~/components/fragments/external-link';
-import { MENU_LINKS } from '~/components/marketing-links';
+import { LanguageSwitcher } from '~/components/language-switcher';
 import { MobileMenu } from '~/components/mobile-menu';
+import { getChromeDictionary } from '~/lib/i18n/chrome';
+import { getHomePath } from '~/lib/i18n/config';
+import { useLocale } from '~/lib/i18n/use-locale';
 
 export function Navbar(): React.JSX.Element {
-  const pathname = usePathname();
+  const locale = useLocale();
+  const t = getChromeDictionary(locale);
   return (
-    <section className="sticky inset-x-0 top-0 z-40 border-b bg-background py-4">
+    <section className="sticky inset-x-0 top-0 z-40 border-b bg-background/80 py-4 backdrop-blur-lg">
       <div className="container">
-        <nav className="hidden justify-between lg:flex">
-          <div className="flex items-center gap-x-9">
+        <nav className="hidden items-center justify-between lg:flex">
+          <div className="flex items-center gap-x-8">
             <Link
-              href={routes.marketing.Index}
+              href={getHomePath(locale)}
               className="flex items-center gap-2"
             >
               <Logo />
             </Link>
-            <div className="flex items-center">
-              <NavigationMenu
-                style={
-                  {
-                    ['--radius']: '1rem'
-                  } as React.CSSProperties
-                }
-              >
-                <NavigationMenuList>
-                  {MENU_LINKS.map((item, index) =>
-                    item.items ? (
-                      <NavigationMenuItem key={index}>
-                        <NavigationMenuTrigger
-                          data-active={
-                            item.items.some(
-                              (subItem) =>
-                                !subItem.external &&
-                                subItem.href !== '#' &&
-                                pathname.startsWith(
-                                  getPathname(subItem.href, baseUrl.Marketing)
-                                )
-                            )
-                              ? ''
-                              : undefined
-                          }
-                          className="rounded-xl text-[15px] font-normal data-active:bg-accent"
-                        >
-                          {item.title}
-                        </NavigationMenuTrigger>
-                        <NavigationMenuContent>
-                          <ul className="w-96 list-none p-2">
-                            {item.items.map((subItem, subIndex) => (
-                              <li key={subIndex}>
-                                <NavigationMenuLink asChild>
-                                  <Link
-                                    href={subItem.href}
-                                    target={
-                                      subItem.external ? '_blank' : undefined
-                                    }
-                                    rel={
-                                      subItem.external
-                                        ? 'noopener noreferrer'
-                                        : undefined
-                                    }
-                                    className="group flex select-none flex-row items-center gap-4 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                  >
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-background text-muted-foreground transition-colors group-hover:text-foreground">
-                                      {subItem.icon}
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium">
-                                        {subItem.title}
-                                        {subItem.external && (
-                                          <ExternalLink className="-mt-2 ml-1 size-2 inline text-muted-foreground" />
-                                        )}
-                                      </div>
-                                      <p className="text-sm leading-snug text-muted-foreground">
-                                        {subItem.description}
-                                      </p>
-                                    </div>
-                                  </Link>
-                                </NavigationMenuLink>
-                              </li>
-                            ))}
-                          </ul>
-                        </NavigationMenuContent>
-                      </NavigationMenuItem>
-                    ) : (
-                      <NavigationMenuItem key={index}>
-                        <NavigationMenuLink
-                          asChild
-                          active={
-                            !item.external &&
-                            pathname.startsWith(
-                              getPathname(item.href, baseUrl.Marketing)
-                            )
-                          }
-                          className={cn(
-                            navigationMenuTriggerStyle(),
-                            'rounded-xl text-[15px] font-normal data-active:bg-accent'
-                          )}
-                        >
-                          <Link
-                            href={item.href}
-                            target={item.external ? '_blank' : undefined}
-                            rel={
-                              item.external ? 'noopener noreferrer' : undefined
-                            }
-                          >
-                            {item.title}
-                          </Link>
-                        </NavigationMenuLink>
-                      </NavigationMenuItem>
-                    )
-                  )}
-                </NavigationMenuList>
-              </NavigationMenu>
-            </div>
+            <ul className="flex items-center gap-1">
+              {t.nav.links.map((link) => (
+                <li key={link.anchor}>
+                  <Link
+                    href={getHomePath(locale, link.anchor)}
+                    className="rounded-xl px-3 py-2 text-[15px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <ThemeToggle className="rounded-xl border-none shadow-none" />
             <Link
               href={routes.dashboard.auth.SignIn}
-              className={cn(
-                buttonVariants({
-                  variant: 'outline'
-                }),
-                'rounded-xl'
-              )}
+              className={cn(buttonVariants({ variant: 'ghost' }), 'rounded-xl')}
             >
-              Sign in
+              {t.nav.signIn}
             </Link>
             <Link
               href={routes.dashboard.auth.SignUp}
               className={cn(
-                buttonVariants({
-                  variant: 'default'
-                }),
-                'rounded-xl'
+                buttonVariants({ variant: 'default' }),
+                'rounded-xl bg-brand font-semibold text-brand-foreground hover:bg-brand/90'
               )}
             >
-              Start for free
+              {t.nav.cta}
             </Link>
           </div>
         </nav>

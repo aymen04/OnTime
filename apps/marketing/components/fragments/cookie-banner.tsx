@@ -6,10 +6,14 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import { Button } from '@workspace/ui/components/button';
 
+import { getChromeDictionary } from '~/lib/i18n/chrome';
+import { useLocale } from '~/lib/i18n/use-locale';
+
 const KEY = 'cookie_consent';
 
 export function CookieBanner(): React.JSX.Element {
   const [showBanner, setShowBanner] = React.useState<boolean>(false);
+  const t = getChromeDictionary(useLocale()).cookies;
 
   React.useEffect(() => {
     if (!localStorage.getItem(KEY)) {
@@ -51,13 +55,12 @@ export function CookieBanner(): React.JSX.Element {
         >
           <div className="rounded-xl border bg-background p-4 shadow-lg">
             <p className="mb-3 text-sm">
-              We use cookies primarily for analytics and to enhance your
-              experience. By accepting you agree to our use of cookies.{' '}
+              {t.message}{' '}
               <Link
                 href="/cookie-policy"
                 className="underline hover:text-primary"
               >
-                Learn more
+                {t.policy}
               </Link>
             </p>
             <div className="flex flex-row gap-2">
@@ -67,7 +70,7 @@ export function CookieBanner(): React.JSX.Element {
                 className="w-1/2"
                 onClick={handleDenyCookies}
               >
-                Deny
+                {t.deny}
               </Button>
               <Button
                 type="button"
@@ -75,7 +78,7 @@ export function CookieBanner(): React.JSX.Element {
                 className="w-1/2"
                 onClick={handleAcceptCookies}
               >
-                Accept
+                {t.accept}
               </Button>
             </div>
           </div>

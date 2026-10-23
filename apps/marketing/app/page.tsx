@@ -1,25 +1,20 @@
 import * as React from 'react';
+import type { Metadata } from 'next';
 
-import { CTA } from '~/components/sections/cta';
-import { FAQ } from '~/components/sections/faq';
-import { Hero } from '~/components/sections/hero';
-import { Logos } from '~/components/sections/logos';
-import { Problem } from '~/components/sections/problem';
-import { Solution } from '~/components/sections/solution';
-import { Stats } from '~/components/sections/stats';
-import { Testimonials } from '~/components/sections/testimonials';
+import { LandingPage } from '~/components/landing/landing-page';
+import { getLandingDictionary } from '~/lib/i18n/landing';
+
+const t = getLandingDictionary('en');
+
+export const metadata: Metadata = {
+  title: { absolute: t.meta.title },
+  description: t.meta.description,
+  alternates: {
+    canonical: '/',
+    languages: { en: '/', fr: '/fr' }
+  }
+};
 
 export default function IndexPage(): React.JSX.Element {
-  return (
-    <>
-      <Hero />
-      <Logos />
-      <Problem />
-      <Solution />
-      <Stats />
-      <Testimonials />
-      <FAQ />
-      <CTA />
-    </>
-  );
+  return <LandingPage locale="en" />;
 }

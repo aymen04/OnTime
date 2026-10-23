@@ -38,6 +38,9 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: true,
   poweredByHeader: false,
+  async redirects() {
+    return [{ source: '/pricing', destination: '/#pricing', permanent: false }];
+  },
   async headers() {
     return [
       {

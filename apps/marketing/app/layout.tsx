@@ -2,7 +2,7 @@ import '@workspace/ui/globals.css';
 
 import * as React from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 
 import { APP_DESCRIPTION, APP_NAME } from '@workspace/common/app';
 import { baseUrl } from '@workspace/routes';
@@ -26,10 +26,16 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl.Marketing),
-  title: APP_NAME,
+  title: {
+    default: `${APP_NAME} — Staff scheduling in one click`,
+    template: `%s | ${APP_NAME}`
+  },
   description: APP_DESCRIPTION,
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' }
+    ],
     apple: '/apple-touch-icon.png'
   },
   manifest: `${baseUrl.Marketing}/manifest`,
@@ -54,6 +60,10 @@ export const metadata: Metadata = {
 };
 
 const inter = Inter({ subsets: ['latin'] });
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  variable: '--font-display-family'
+});
 
 export default async function RootLayout({
   children
@@ -61,7 +71,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className="size-full min-h-screen"
+      className={`${bricolage.variable} size-full min-h-screen`}
       suppressHydrationWarning
     >
       <body className={`${inter.className} size-full`}>

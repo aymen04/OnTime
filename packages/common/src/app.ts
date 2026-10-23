@@ -1,2 +1,3 @@
-export const APP_NAME = 'Acme';
-export const APP_DESCRIPTION = 'A fantastic SaaS to make your life easier.';
+export const APP_NAME = 'Semiweekly';
+export const APP_DESCRIPTION =
+  'One-click staff scheduling for restaurants, shops and seasonal teams.';

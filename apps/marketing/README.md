@@ -10,4 +10,4 @@ To start the development server, run:
 pnpm --filter=marketing dev
 ```
 
-Once the server is running, navigate to http://localhost:3001 in your browser to access the app.
+Once the server is running, navigate to http://localhost:3105 in your browser to access the app.
