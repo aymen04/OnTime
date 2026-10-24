@@ -6,8 +6,8 @@ import { useTransition } from 'react';
 // On importe le bouton de ton design system
 import { Button } from '@workspace/ui/components/button';
 
-import { approveSwapRequest } from '../../../../../actions/shift-swap/approve-swap-request';
-import { rejectSwapRequest } from '../../../../../actions/shift-swap/reject-swap-request';
+import { approveSwapRequest } from '../../../../../../actions/shift-swap/approve-swap-request';
+import { rejectSwapRequest } from '../../../../../../actions/shift-swap/reject-swap-request';
 
 export function ManagerSwapView({ requests }: { requests: any[] }) {
   const [isPending, startTransition] = useTransition();

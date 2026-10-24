@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { useState, useTransition } from 'react';
-import { createSwapRequest } from '../../../../../actions/shift-swap/create-swap-request';
-import { respondSwapRequest } from '../../../../../actions/shift-swap/respond-swap-request-schema';
+import { createSwapRequest } from '../../../../../../actions/shift-swap/create-swap-request';
+import { respondSwapRequest } from '../../../../../../actions/shift-swap/respond-swap-request-schema';
 
 import { Button } from '@workspace/ui/components/button';
 
