@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
-// Import du composant interactif
 import { TimesheetTable } from './_components/timesheet-table';
 
 export default async function BusinessMetricsPage({
@@ -30,7 +29,6 @@ export default async function BusinessMetricsPage({
 
   if (!org) redirect('/');
 
-  // Sécurité Manager
   const membership = await prisma.membership.findUnique({
     where: {
       organizationId_userId: { organizationId: org.id, userId: session.user.id }
@@ -42,7 +40,6 @@ export default async function BusinessMetricsPage({
     return <div className="p-8 text-red-500">Accès refusé. Tableau de bord réservé aux managers.</div>;
   }
 
-  // Période d'analyse : Le mois en cours
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -50,7 +47,6 @@ export default async function BusinessMetricsPage({
   const endOfMonth = new Date(startOfMonth);
   endOfMonth.setMonth(endOfMonth.getMonth() + 1);
 
-  // 1. Récupération des données business du mois
   const [shiftsThisMonth, approvedTimeOff, activeEmployees] = await Promise.all([
     prisma.shift.findMany({
       where: { 
@@ -71,7 +67,6 @@ export default async function BusinessMetricsPage({
     })
   ]);
 
-  // 2. Calculs Business (Heures et Coûts)
   let totalMinutes = 0;
   shiftsThisMonth.forEach(shift => {
     const durationMs = shift.endTime.getTime() - shift.startTime.getTime();
@@ -80,26 +75,26 @@ export default async function BusinessMetricsPage({
 
   const totalHours = Math.round(totalMinutes / 60);
   
-  // Taux horaire moyen fictif
   const averageHourlyRate = 22; 
   const estimatedLaborCost = totalHours * averageHourlyRate;
   const avgHoursPerEmployee = activeEmployees > 0 ? Math.round(totalHours / activeEmployees) : 0;
 
   return (
-    <div className="flex flex-col gap-6 p-8">
+    // AJOUT : h-full overflow-y-auto pour forcer le scroll vertical + p-4 sur mobile
+    <div className="flex flex-col gap-6 p-4 sm:p-8 h-full max-h-screen overflow-y-auto pb-24">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Suivi Business</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Suivi Business</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Analyse des coûts, du volume d'heures et de la productivité du mois en cours.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* KPI 1 : Volume d'heures */}
+      {/* Grille des 4 KPI : 1 col sur mobile, 2 sur tablette, 4 sur PC */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Volume Horaire (Mois)</CardTitle>
-            <ClockIcon className="size-4 text-muted-foreground" />
+            <ClockIcon className="size-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalHours} h</div>
@@ -109,11 +104,10 @@ export default async function BusinessMetricsPage({
           </CardContent>
         </Card>
 
-        {/* KPI 2 : Coût estimé */}
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Coût Salarial Estimé</CardTitle>
-            <WalletIcon className="size-4 text-muted-foreground" />
+            <WalletIcon className="size-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${estimatedLaborCost.toLocaleString()}</div>
@@ -123,11 +117,10 @@ export default async function BusinessMetricsPage({
           </CardContent>
         </Card>
 
-        {/* KPI 3 : Moyenne par employé */}
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Moyenne / Employé</CardTitle>
-            <BriefcaseIcon className="size-4 text-muted-foreground" />
+            <BriefcaseIcon className="size-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{avgHoursPerEmployee} h</div>
@@ -137,11 +130,10 @@ export default async function BusinessMetricsPage({
           </CardContent>
         </Card>
 
-        {/* KPI 4 : Impact Congés */}
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Congés Approuvés</CardTitle>
-            <CalendarOffIcon className="size-4 text-muted-foreground" />
+            <CalendarOffIcon className="size-4 text-muted-foreground shrink-0" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{approvedTimeOff}</div>
@@ -152,21 +144,19 @@ export default async function BusinessMetricsPage({
         </Card>
       </div>
 
-      {/* Section Détails Business */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
-        {/* Graphique d'évolution */}
-        <Card className="col-span-3 min-h-[350px] border border-border/50">
+      {/* Section Détails Business : 1 colonne sur mobile, 7 colonnes sur grand écran */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-7 mt-2">
+        <Card className="lg:col-span-3 min-h-[280px] sm:min-h-[350px] border border-border/50">
           <CardHeader>
             <CardTitle>Évolution des coûts</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
+          <CardContent className="flex flex-col items-center justify-center h-[200px] sm:h-[250px] text-muted-foreground">
             <TrendingUpIcon className="size-12 mb-4 opacity-20" />
             <p className="text-sm">Graphique Recharts (À venir)</p>
           </CardContent>
         </Card>
 
-        {/* Tableau interactif avec export CSV */}
-        <div className="col-span-4">
+        <div className="lg:col-span-4 min-w-0">
           <TimesheetTable orgId={org.id} />
         </div>
       </div>

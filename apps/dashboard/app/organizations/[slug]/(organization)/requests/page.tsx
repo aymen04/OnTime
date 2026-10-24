@@ -59,39 +59,40 @@ export default async function RequestsPage({
   });
 
   return (
-    <div className="flex flex-col gap-8 p-8">
+    // AJOUT : h-full max-h-screen overflow-y-auto pb-24 pour débloquer le scroll mobile + p-4 sur petits écrans
+    <div className="flex flex-col gap-6 sm:gap-8 p-4 sm:p-8 h-full max-h-screen overflow-y-auto pb-24">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Demandes & Approbations</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Demandes & Approbations</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Gérez les congés et les échanges de shifts de votre équipe.
         </p>
       </div>
 
       {/* --- SECTION 1 : EN ATTENTE --- */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">À traiter</h2>
-        <div className="grid gap-6 md:grid-cols-2">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">À traiter</h2>
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+          
           {/* Congés en attente */}
-          <div className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="p-6 pb-2 border-b">
-              <h3 className="font-semibold">Congés ({pendingTimeOff.length})</h3>
+          <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+            <div className="p-4 sm:p-6 pb-3 border-b">
+              <h3 className="font-semibold text-sm sm:text-base">Congés ({pendingTimeOff.length})</h3>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {pendingTimeOff.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucune demande.</p>
               ) : (
                 <ul className="space-y-4">
                   {pendingTimeOff.map((req) => (
-                    <li key={req.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
-                      <div>
-                        <p className="font-medium">{req.employee.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                    <li key={req.id} className="flex justify-between items-center gap-3 border-b pb-4 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base truncate">{req.employee.name}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground break-words">
                           Du {req.startDate.toLocaleDateString()} au {req.endDate.toLocaleDateString()}
                         </p>
                       </div>
                       
-                      {/* FIX VERCEL : Ajout de "as any" ici */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 shrink-0">
                         <form action={updateTimeOffStatus.bind(null, slug, req.id, 'approved') as any}>
                           <button type="submit" className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors" title="Approuver">
                             <CheckIcon className="size-4" />
@@ -111,26 +112,27 @@ export default async function RequestsPage({
           </div>
 
           {/* Échanges en attente */}
-          <div className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="p-6 pb-2 border-b">
-              <h3 className="font-semibold">Échanges ({pendingSwaps.length})</h3>
+          <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+            <div className="p-4 sm:p-6 pb-3 border-b">
+              <h3 className="font-semibold text-sm sm:text-base">Échanges ({pendingSwaps.length})</h3>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {pendingSwaps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun échange.</p>
               ) : (
                 <ul className="space-y-4">
                   {pendingSwaps.map((swap) => (
-                    <li key={swap.id} className="flex justify-between items-center border-b pb-4 last:border-0 last:pb-0">
-                      <div>
-                        <p className="font-medium">{swap.requester.name} ➡️ {swap.targetEmployee.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                    <li key={swap.id} className="flex justify-between items-center gap-3 border-b pb-4 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm sm:text-base break-words leading-snug">
+                          {swap.requester.name} <span className="inline-block mx-0.5">➡️</span> {swap.targetEmployee.name}
+                        </p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
                           Shift du {swap.shift.startTime.toLocaleDateString()}
                         </p>
                       </div>
                       
-                      {/* FIX VERCEL : Ajout de "as any" ici */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 shrink-0">
                         <form action={updateSwapStatus.bind(null, slug, swap.id, 'APPROVED') as any}>
                           <button type="submit" className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-md transition-colors" title="Approuver">
                             <CheckIcon className="size-4" />
@@ -148,32 +150,34 @@ export default async function RequestsPage({
               )}
             </div>
           </div>
+
         </div>
       </div>
 
       {/* --- SECTION 2 : HISTORIQUE --- */}
-      <div className="mt-4 opacity-80">
-        <h2 className="text-xl font-semibold mb-4">Historique de l'équipe</h2>
-        <div className="grid gap-6 md:grid-cols-2">
+      <div className="mt-2 opacity-90">
+        <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Historique de l'équipe</h2>
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+          
           {/* Historique Congés */}
-          <div className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="p-6 pb-2 border-b bg-muted/30">
+          <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+            <div className="p-4 sm:p-6 pb-3 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Congés traités</h3>
             </div>
-            <div className="p-6 max-h-[300px] overflow-y-auto">
+            <div className="p-4 sm:p-6 max-h-[300px] overflow-y-auto">
               {historyTimeOff.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun historique.</p>
               ) : (
                 <ul className="space-y-4">
                   {historyTimeOff.map((req) => (
-                    <li key={req.id} className="flex justify-between items-center border-b pb-3 last:border-0 last:pb-0">
-                      <div>
-                        <p className="font-medium text-sm">{req.employee.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                    <li key={req.id} className="flex justify-between items-center gap-3 border-b pb-3 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{req.employee.name}</p>
+                        <p className="text-xs text-muted-foreground break-words">
                           Du {req.startDate.toLocaleDateString()} au {req.endDate.toLocaleDateString()}
                         </p>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-md ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded-md ${req.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {req.status === 'approved' ? 'Approuvé' : 'Refusé'}
                       </span>
                     </li>
@@ -184,24 +188,26 @@ export default async function RequestsPage({
           </div>
 
           {/* Historique Échanges */}
-          <div className="rounded-xl border bg-card text-card-foreground shadow">
-            <div className="p-6 pb-2 border-b bg-muted/30">
+          <div className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden">
+            <div className="p-4 sm:p-6 pb-3 border-b bg-muted/30">
               <h3 className="font-semibold text-sm">Échanges traités</h3>
             </div>
-            <div className="p-6 max-h-[300px] overflow-y-auto">
+            <div className="p-4 sm:p-6 max-h-[300px] overflow-y-auto">
               {historySwaps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun historique.</p>
               ) : (
                 <ul className="space-y-4">
                   {historySwaps.map((swap) => (
-                    <li key={swap.id} className="flex justify-between items-center border-b pb-3 last:border-0 last:pb-0">
-                      <div>
-                        <p className="font-medium text-sm">{swap.requester.name} ➡️ {swap.targetEmployee.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                    <li key={swap.id} className="flex justify-between items-center gap-3 border-b pb-3 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm break-words leading-snug">
+                          {swap.requester.name} <span className="inline-block mx-0.5">➡️</span> {swap.targetEmployee.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           Shift du {swap.shift.startTime.toLocaleDateString()}
                         </p>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-md ${swap.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`shrink-0 text-xs font-bold px-2 py-1 rounded-md ${swap.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {swap.status === 'APPROVED' ? 'Approuvé' : 'Refusé'}
                       </span>
                     </li>
@@ -210,6 +216,7 @@ export default async function RequestsPage({
               )}
             </div>
           </div>
+
         </div>
       </div>
     </div>
